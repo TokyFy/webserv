@@ -45,7 +45,7 @@ int main() {
         recv(client_fd, buffer, sizeof(buffer) - 1, 0);
 
         const char *response =
-            "HTTP/1.1 500 OK\r\n"
+            "HTTP/1.1 200 OK\r\n"
             "Content-Type: multipart/form-data\r\n"
             "Transfer-Encoding: chunked\r\n"
             "Connection: close\r\n"
@@ -54,24 +54,14 @@ int main() {
         write(client_fd, response, strlen(response));
 
         int i = 0;
-        std::cout << " <<<<<<<<<<<<< " << std::endl;
-        while (true) {
-            std::ostringstream oss;
-            oss << "~ n ~ " << i << "\n";
-            std::string content = oss.str();           
+        while (true) { 
+            std::string chunk = "18\r\n424242424242424242424242\r\n";
 
-            std::stringstream ss;
-            ss << std::hex << content.size() << "\r\n" << content << "\r\n";
-        
-            std::string chunk = ss.str();
             if(write(client_fd, chunk.c_str(), chunk.size()) == -1)
-                break;
-            
+                    break;
             i++;
         }
         close(client_fd);
-
-        std::cout << " >>>>>>>>>>> " << std::endl;
     }
 
     close(server_fd);

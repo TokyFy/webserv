@@ -1,7 +1,12 @@
+#include <cstring>
 #include <netinet/in.h>
+#include <ostream>
+#include <string>
 #include <sys/socket.h>
+#include <sys/types.h>
 #include <unistd.h>
 #include <sys/epoll.h>
+#include <iostream>
 
 int main() {
 	int server_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -15,7 +20,9 @@ int main() {
 	addr.sin_addr.s_addr = INADDR_ANY;
 
 	if (bind(server_fd, reinterpret_cast<sockaddr *>(&addr), sizeof(addr)) == -1)
+    {
 		return 1;
+    }
 
 	listen(server_fd, 5);
 
@@ -33,17 +40,36 @@ int main() {
 
 		for(int i = 0 ; i < queue ; i++)
 		{
-			if(all_events[i].data.fd == server_fd)
+            struct epoll_event event = all_events[i];
+
+			if(event.data.fd == server_fd)
 			{
 				int client_fd = accept(server_fd, nullptr, nullptr);
 				struct epoll_event client_event;
-				client_event.events = EPOLLOUT;
+				client_event.events = EPOLLIN;
 				client_event.data.fd = client_fd;
 				epoll_ctl(epoll, EPOLL_CTL_ADD, client_fd, &client_event);
 			}
 			else
 			{
-				send(all_events[i].data.fd , "~~", 2 , MSG_DONTWAIT | MSG_NOSIGNAL);
+                if(event.events == EPOLLIN)
+                {
+                    char to_read[0x400];
+                    memset(to_read, 0, 0x400);
+                    ssize_t read_size = recv(event.data.fd , &to_read , 0x400 , MSG_DONTWAIT | MSG_NOSIGNAL);
+
+                    std::cout << to_read;
+                    
+                    event.events = EPOLLOUT;
+                    epoll_ctl(epoll , EPOLL_CTL_MOD , event.data.fd , &event);
+                }
+                else
+                {
+                    std::string respone = "HTTP/1.0 200 OK\r\nContent-Length: 32\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n<html><body>Hello!</body></html>";
+                    send(event.data.fd, respone.c_str() , respone.length() , MSG_DONTWAIT | MSG_NOSIGNAL);
+                    event.events = EPOLLIN;
+                    epoll_ctl(epoll , EPOLL_CTL_MOD , event.data.fd , &event);
+                }
 			}
 		}
 	}

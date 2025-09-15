@@ -1,12 +1,24 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   serv.cpp                                           :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: franaivo <franaivo@student.42antananarivo  +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/09/15 22:16:05 by franaivo          #+#    #+#             */
+/*   Updated: 2025/09/15 22:53:51 by franaivo         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include <cstring>
 #include <netinet/in.h>
-#include <ostream>
 #include <string>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <sys/epoll.h>
 #include <iostream>
+#include "HttpServer.hpp"
 
 int main() {
 	int server_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -29,7 +41,7 @@ int main() {
 	int epoll = epoll_create(1);
 	struct epoll_event server_event;
 	server_event.events = EPOLLIN;
-	server_event.data.fd = server_fd;
+	server_event.data.ptr = new Fd();
 
 	epoll_ctl(epoll, EPOLL_CTL_ADD, server_fd , &server_event);
 
@@ -59,7 +71,7 @@ int main() {
                     ssize_t read_size = recv(event.data.fd , &to_read , 0x400 , MSG_DONTWAIT | MSG_NOSIGNAL);
 
                     std::cout << to_read;
-                    
+
                     event.events = EPOLLOUT;
                     epoll_ctl(epoll , EPOLL_CTL_MOD , event.data.fd , &event);
                 }

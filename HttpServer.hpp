@@ -50,5 +50,8 @@ class Fd
         HttpAgent *owner;
 
     public :
-        Fd();
+        Fd(int fd , FD_TYPE type);
+        void setOwner(HttpAgent* agent);
+        FD_TYPE getType() const;
+        int getFd() const;
 };

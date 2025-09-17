@@ -41,7 +41,7 @@ int main() {
 	int epoll = epoll_create(1);
 	struct epoll_event server_event;
 	server_event.events = EPOLLIN;
-	server_event.data.ptr = new Fd();
+	server_event.data.ptr = new Fd(server_fd , SERVER_FD);
 
 	epoll_ctl(epoll, EPOLL_CTL_ADD, server_fd , &server_event);
 
@@ -53,13 +53,14 @@ int main() {
 		for(int i = 0 ; i < queue ; i++)
 		{
             struct epoll_event event = all_events[i];
+            Fd *fd_object =  (Fd*)event.data.ptr;
 
-			if(event.data.fd == server_fd)
+			if(fd_object->getType() == SERVER_FD)
 			{
 				int client_fd = accept(server_fd, nullptr, nullptr);
 				struct epoll_event client_event;
 				client_event.events = EPOLLIN;
-				client_event.data.fd = client_fd;
+				client_event.data.ptr = new Fd(client_fd , CLIENT_FD);
 				epoll_ctl(epoll, EPOLL_CTL_ADD, client_fd, &client_event);
 			}
 			else
@@ -68,19 +69,22 @@ int main() {
                 {
                     char to_read[0x400];
                     memset(to_read, 0, 0x400);
-                    ssize_t read_size = recv(event.data.fd , &to_read , 0x400 , MSG_DONTWAIT | MSG_NOSIGNAL);
+
+                    Fd *client_fd = (Fd*)event.data.ptr;
+                    ssize_t read_size = recv(client_fd->getFd() , &to_read , 0x400 , MSG_DONTWAIT | MSG_NOSIGNAL);
 
                     std::cout << to_read;
 
                     event.events = EPOLLOUT;
-                    epoll_ctl(epoll , EPOLL_CTL_MOD , event.data.fd , &event);
+                    epoll_ctl(epoll , EPOLL_CTL_MOD , client_fd->getFd() , &event);
                 }
                 else
                 {
+                    Fd *client_fd = (Fd*)event.data.ptr;
                     std::string respone = "HTTP/1.0 200 OK\r\nContent-Length: 32\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n<html><body>Hello!</body></html>";
-                    send(event.data.fd, respone.c_str() , respone.length() , MSG_DONTWAIT | MSG_NOSIGNAL);
+                    send(client_fd->getFd(), respone.c_str() , respone.length() , MSG_DONTWAIT | MSG_NOSIGNAL);
                     event.events = EPOLLIN;
-                    epoll_ctl(epoll , EPOLL_CTL_MOD , event.data.fd , &event);
+                    epoll_ctl(epoll , EPOLL_CTL_MOD , client_fd->getFd() , &event);
                 }
 			}
 		}

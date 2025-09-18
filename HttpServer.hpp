@@ -14,7 +14,7 @@
 
 #include <string>
 
-enum FD_TYPE { FILE_FD , SERVER_FD , CLIENT_FD };
+enum FD_TYPE { IN_FILE_FD , OUT_FILE_FD , SERVER_FD , CLIENT_FD };
 
 class HttpAgent {
     protected :
@@ -22,6 +22,7 @@ class HttpAgent {
 
     public :
         HttpAgent( int socket_fd);
+        int getSockeFd() const;
 };
 
 class HttpServer : public HttpAgent
@@ -37,6 +38,7 @@ class HttpClient : public HttpAgent
 {
     private :
         std::string rawHeaders;
+        HttpAgent   *server;
 
     public :
         HttpClient(int socket_fd);
@@ -51,7 +53,8 @@ class Fd
 
     public :
         Fd(int fd , FD_TYPE type);
-        void setOwner(HttpAgent* agent);
+        void    setOwner(HttpAgent* agent);
+        HttpAgent*  getOwner();
         FD_TYPE getType() const;
-        int getFd() const;
+        int     getFd() const;
 };

@@ -24,6 +24,7 @@
 #include <fcntl.h>
 #include <cstdio>
 
+int DEBUG = 0;
 
 int main() {
 	int server_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -53,7 +54,8 @@ int main() {
 	struct epoll_event all_events[0xA];
 
 	while (true) {
-		int queue = epoll_wait(epoll, all_events, 0xA, -1);
+        // Clean all 
+		int queue = epoll_wait(epoll, all_events, 0xA, 0);
 
 		for(int i = 0 ; i < queue ; i++)
 		{
@@ -74,7 +76,7 @@ int main() {
 			{
                 int static_fd = open("./www/index.html" , O_RDONLY);
 
-                std::string respone = "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\nContent-Type: text/html\r\n\r\n";
+                std::string respone = "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n";
                 send( fd_object->getFd(), respone.c_str() , respone.size(), MSG_DONTWAIT | MSG_NOSIGNAL);
                 
                 Fd* file_fd = new Fd(static_fd , OUT_FILE_FD);
@@ -97,11 +99,11 @@ int main() {
 
                 if(readed <= 0)
                 {
-                    std::cout << "end !" << std::endl;
+                    std::cout << "end ! " << DEBUG++ << std::endl;
                     std::string response = "0\r\n\r\n";
                     send( client->getSockeFd() , response.c_str(), response.size(), MSG_DONTWAIT | MSG_NOSIGNAL);
-                    close(fd_object->getFd());
-                    close(client->getSockeFd());
+
+                    epoll_ctl( epoll, EPOLL_CTL_DEL, client->getSockeFd() , NULL);
                 }
                 else 
                 {

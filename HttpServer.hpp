@@ -12,6 +12,7 @@
 
 # pragma once
 
+#include <map>
 #include <string>
 
 enum FD_TYPE { IN_FILE_FD , OUT_FILE_FD , SERVER_FD , CLIENT_FD };
@@ -25,15 +26,6 @@ class HttpAgent {
         int getSockeFd() const;
 };
 
-class HttpServer : public HttpAgent
-{
-    private :
-        std::string root;
-
-    public :
-        HttpServer(int socket_fd);
-};
-
 class HttpClient : public HttpAgent
 {
     private :
@@ -44,6 +36,17 @@ class HttpClient : public HttpAgent
         HttpClient(int socket_fd);
 };
 
+class HttpServer : public HttpAgent
+{
+    private :
+        std::string root;
+        std::map<int , HttpClient* > clients;
+
+    public :
+        HttpServer(int socket_fd);
+};
+
+
 class Fd 
 {
     private :
@@ -53,8 +56,8 @@ class Fd
 
     public :
         Fd(int fd , FD_TYPE type);
-        void    setOwner(HttpAgent* agent);
+        void        setOwner(HttpAgent* agent);
         HttpAgent*  getOwner();
-        FD_TYPE getType() const;
-        int     getFd() const;
+        FD_TYPE     getType() const;
+        int         getFd() const;
 };

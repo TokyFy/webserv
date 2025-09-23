@@ -24,6 +24,8 @@
 #include <fcntl.h>
 #include <cstdio>
 
+#define CHUNK_SIZE 32 * 1024
+
 int DEBUG = 0;
 
 int main() {
@@ -93,17 +95,23 @@ int main() {
             {
                 HttpClient* client = (HttpClient*)(fd_object->getOwner());
 
-                char buffers[ 16 * 1024 ]; 
-                std::memset(buffers , 0 , 16 * 1024);
-                int readed = read(fd_object->getFd(), buffers, 16 * 1024);
+                char buffers[ CHUNK_SIZE ]; 
+                std::memset(buffers , 0 , CHUNK_SIZE);
+                int readed = read(fd_object->getFd(), buffers, CHUNK_SIZE);
 
                 if(readed <= 0)
                 {
                     std::cout << "end ! " << DEBUG++ << std::endl;
                     std::string response = "0\r\n\r\n";
-                    send( client->getSockeFd() , response.c_str(), response.size(), MSG_DONTWAIT | MSG_NOSIGNAL);
-
-                    epoll_ctl( epoll, EPOLL_CTL_DEL, client->getSockeFd() , NULL);
+                    int sent = send( client->getSockeFd() , response.c_str(), response.size(), MSG_DONTWAIT | MSG_NOSIGNAL);
+                    
+                    if(sent < 0)
+                    {
+                        epoll_ctl( epoll, EPOLL_CTL_DEL, client->getSockeFd() , &event);
+                        close(client->getSockeFd());
+                        close(fd_object->getFd());
+                        DEBUG = 0;
+                    }
                 }
                 else 
                 {

@@ -12,9 +12,16 @@
 
 #include "HttpServer.hpp"
 #include "HttpAgent.hpp"
+#include <unistd.h>
 
 HttpServer::HttpServer(int socket_fd)
     : HttpAgent(socket_fd, SERVER)
 {
+    return;
+}
+
+HttpServer::~HttpServer()
+{
+    close(socket_fd);
     return;
 }

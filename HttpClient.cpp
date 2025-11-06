@@ -12,9 +12,16 @@
 
 #include "HttpClient.hpp"
 #include "HttpAgent.hpp"
+#include <unistd.h>
 
 HttpClient::HttpClient(int socket_fd , int server_id)
     : HttpAgent(socket_fd, CLIENT) , server_id(server_id)
 {
     return;
+}
+
+HttpClient::~HttpClient()
+{
+    close(file_fd);
+    close(socket_fd);
 }

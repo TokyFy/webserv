@@ -27,5 +27,6 @@ class HttpClient : public HttpAgent
 
 
     public :
+        ~HttpClient();
         HttpClient(int socket_fd , int server_id);
 };

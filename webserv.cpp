@@ -91,9 +91,16 @@ int main() {
 
                 std::cout << client_fd << std::endl;
 
-                std::string greeting = "Hello world !";
+                std::string greeting =
+                "HTTP/1.1 200 OK\r\n"
+                "Content-Type: text/plain\r\n"
+                "Content-Length: 12\r\n"
+                "\r\n"
+                "Hello world !";
 
-                send( client_fd , greeting.c_str(), greeting.size(), MSG_DONTWAIT | MSG_NOSIGNAL);
+
+                std::cout << send( client_fd , greeting.c_str(), greeting.size(), MSG_DONTWAIT | MSG_NOSIGNAL) << std::endl;
+                httpAgentPool.erase(client_fd);
             }
         }
 

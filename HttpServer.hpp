@@ -23,6 +23,7 @@ class HttpServer : public HttpAgent
         HttpServer();
 
     public :
+        ~HttpServer();
         HttpServer(int socket_fd);
 };
 

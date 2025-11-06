@@ -23,6 +23,7 @@ class Pool
     public:
         Pool();
         ~Pool();
-        void add(unsigned int id , HttpAgent *agent);
-        HttpAgent* pull(unsigned int id) const;
+        void        add(unsigned int id , HttpAgent *agent);
+        HttpAgent*  pull(unsigned int id) const;
+        void        erase(unsigned int id);
 };

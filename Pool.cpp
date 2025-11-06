@@ -45,3 +45,15 @@ HttpAgent* Pool::pull(unsigned int id) const
     
     return NULL;
 }
+
+
+void Pool::erase(unsigned int id)
+{
+    HttpAgent* agent = this->pull(id);
+
+    if(!agent)
+        return;
+
+    delete agent;
+    agents.erase(id);
+}

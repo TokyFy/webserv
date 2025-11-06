@@ -1,28 +1,31 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   serv.cpp                                           :+:      :+:    :+:   */
+/*   webserv.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: franaivo <franaivo@student.42antananarivo  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/15 22:16:05 by franaivo          #+#    #+#             */
-/*   Updated: 2025/09/15 22:53:51 by franaivo         ###   ########.fr       */
+/*   Updated: 2025/11/06 10:24:07 by franaivo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include <cstddef>
+#include "HttpAgent.hpp"
+#include "HttpServer.hpp"
+#include "HttpClient.hpp"
+#include "Pool.hpp"
 #include <cstdlib>
 #include <cstring>
-#include <iostream>
 #include <netinet/in.h>
 #include <string>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <sys/epoll.h>
 #include <unistd.h>
 #include <sys/epoll.h>
-#include "HttpServer.hpp"
 #include <fcntl.h>
 #include <cstdio>
+#include <iostream>
 
 #define CHUNK_SIZE 32 * 1024
 
@@ -49,85 +52,51 @@ int main() {
 	int epoll = epoll_create(1);
 	struct epoll_event server_event;
 	server_event.events = EPOLLIN;
-	server_event.data.ptr = new Fd(server_fd , SERVER_FD);
+	server_event.data.fd = server_fd;
 
 	epoll_ctl(epoll, EPOLL_CTL_ADD, server_fd , &server_event);
 
-	struct epoll_event all_events[0xA];
+	struct epoll_event all_events[0xFF];
+
+
+    Pool                httpAgentPool;
+    httpAgentPool.add(server_fd, new HttpServer(server_fd));
+
 
 	while (true) {
-        // Clean all 
-		int queue = epoll_wait(epoll, all_events, 0xA, 0);
-
-		for(int i = 0 ; i < queue ; i++)
-		{
+		int queue = epoll_wait(epoll, all_events, 0xFF, 0);
+        
+        for(int i = 0 ; i < queue ; i++)
+        {
             struct epoll_event event = all_events[i];
-            Fd *fd_object =  (Fd*)event.data.ptr;
 
-			if(fd_object->getType() == SERVER_FD)
-			{
-				int client_fd = accept(server_fd, NULL, NULL);
-				struct epoll_event client_event;
-				client_event.events = EPOLLIN;
-				client_event.data.ptr = new Fd(client_fd , CLIENT_FD);
-				epoll_ctl(epoll, EPOLL_CTL_ADD, client_fd, &client_event);
-                continue;
-			}
+            HttpAgent* agent = httpAgentPool.pull(event.data.fd);
 
-            if (fd_object->getType() == CLIENT_FD)
-			{
-                int static_fd = open("./www/index.html" , O_RDONLY);
-
-                std::string respone = "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n";
-                send( fd_object->getFd(), respone.c_str() , respone.size(), MSG_DONTWAIT | MSG_NOSIGNAL);
-                
-                Fd* file_fd = new Fd(static_fd , OUT_FILE_FD);
-                file_fd->setOwner(new HttpClient(fd_object->getFd()));
-
-                event.events = EPOLLOUT;
-                event.data.ptr = file_fd;
-                epoll_ctl(epoll , EPOLL_CTL_MOD , fd_object->getFd() , &event);
-                delete fd_object;
-                continue;
-			}
-
-            if(fd_object->getType() == OUT_FILE_FD)
+            if(agent->getType() == SERVER)
             {
-                HttpClient* client = (HttpClient*)(fd_object->getOwner());
+                int client_fd = accept( event.data.fd, NULL , NULL);
+                struct epoll_event client_event;
+                client_event.events = EPOLLIN;
+                client_event.data.fd = client_fd;
+                epoll_ctl(epoll , EPOLL_CTL_ADD , client_fd , &client_event);
 
-                char buffers[ CHUNK_SIZE ]; 
-                std::memset(buffers , 0 , CHUNK_SIZE);
-                int readed = read(fd_object->getFd(), buffers, CHUNK_SIZE);
-
-                if(readed <= 0)
-                {
-                    std::cout << "end ! " << DEBUG++ << std::endl;
-                    std::string response = "0\r\n\r\n";
-                    int sent = send( client->getSockeFd() , response.c_str(), response.size(), MSG_DONTWAIT | MSG_NOSIGNAL);
-                    
-                    if(sent < 0)
-                    {
-                        epoll_ctl( epoll, EPOLL_CTL_DEL, client->getSockeFd() , &event);
-                        close(client->getSockeFd());
-                        close(fd_object->getFd());
-                        DEBUG = 0;
-                    }
-                }
-                else 
-                {
-                    std::string response;
-
-                    char sizeBuf[32];
-                    std::memset(sizeBuf , 0 , 32 );
-                    int len = std::snprintf(sizeBuf, sizeof(sizeBuf), "%X\r\n", (uint)readed);
-
-                    response.append(sizeBuf, len);
-                    response.append(buffers, readed);
-                    response.append("\r\n");
-                    send( client->getSockeFd() , response.c_str(), response.size(), MSG_DONTWAIT | MSG_NOSIGNAL);
-                }
+                httpAgentPool.add(client_fd, new HttpClient(client_fd , event.data.fd));
+                continue;
             }
-		}
+            else
+            {
+                HttpClient* client = dynamic_cast<HttpClient*>(httpAgentPool.pull(event.data.fd));
+
+                int client_fd = client->getSockeFd();
+
+                std::cout << client_fd << std::endl;
+
+                std::string greeting = "Hello world !";
+
+                send( client_fd , greeting.c_str(), greeting.size(), MSG_DONTWAIT | MSG_NOSIGNAL);
+            }
+        }
+
 	}
 
 	close(server_fd);

@@ -1,28 +1,20 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   HttpServer.hpp                                     :+:      :+:    :+:   */
+/*   HttpClient.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: franaivo <franaivo@student.42antananarivo  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/09/15 21:17:55 by franaivo          #+#    #+#             */
-/*   Updated: 2025/11/06 09:04:27 by franaivo         ###   ########.fr       */
+/*   Created: 2025/11/06 08:44:08 by franaivo          #+#    #+#             */
+/*   Updated: 2025/11/06 09:00:44 by franaivo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-# pragma once
-
-#include <string>
+#include "HttpClient.hpp"
 #include "HttpAgent.hpp"
 
-class HttpServer : public HttpAgent
+HttpClient::HttpClient(int socket_fd , int server_id)
+    : HttpAgent(socket_fd, CLIENT) , server_id(server_id)
 {
-    private :
-        std::string root;
-
-        HttpServer();
-
-    public :
-        HttpServer(int socket_fd);
-};
-
+    return;
+}

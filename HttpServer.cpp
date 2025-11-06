@@ -1,54 +1,20 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   HttpServer.cpp                                     :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: franaivo <franaivo@student.42antananarivo  +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/11/06 09:01:24 by franaivo          #+#    #+#             */
+/*   Updated: 2025/11/06 09:03:46 by franaivo         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "HttpServer.hpp"
-#include <cstddef>
-
-HttpAgent::HttpAgent(int socket_fd)
-    : socket_fd(socket_fd)
-{
-    return;
-}
-
-int HttpAgent::getSockeFd() const
-{
-    return socket_fd;
-}
+#include "HttpAgent.hpp"
 
 HttpServer::HttpServer(int socket_fd)
-    : HttpAgent(socket_fd)
+    : HttpAgent(socket_fd, SERVER)
 {
     return;
-}
-
-HttpClient::HttpClient(int socket_fd)
-    : HttpAgent(socket_fd)
-{
-    return;
-}
-
-Fd::Fd(int fd , FD_TYPE type)
-    : fd(fd) , type(type) , owner(NULL)
-{
-    return;
-}
-
-void Fd::setOwner(HttpAgent* agent)
-{
-    if(owner)
-        return;
-
-    owner = agent;
-}
-
-HttpAgent* Fd::getOwner()
-{
-    return owner;
-}
-
-FD_TYPE Fd::getType() const 
-{
-    return type;
-}
-
-int Fd::getFd() const 
-{
-    return fd;
 }

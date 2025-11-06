@@ -1,28 +1,31 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   HttpServer.hpp                                     :+:      :+:    :+:   */
+/*   HttpAgent.hpp                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: franaivo <franaivo@student.42antananarivo  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/09/15 21:17:55 by franaivo          #+#    #+#             */
-/*   Updated: 2025/11/06 09:04:27 by franaivo         ###   ########.fr       */
+/*   Created: 2025/11/06 07:57:20 by franaivo          #+#    #+#             */
+/*   Updated: 2025/11/06 08:47:18 by franaivo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 # pragma once
 
-#include <string>
-#include "HttpAgent.hpp"
+enum TYPE   { SERVER , CLIENT };
 
-class HttpServer : public HttpAgent
-{
-    private :
-        std::string root;
+class HttpAgent {
+    private:
+        HttpAgent();
 
-        HttpServer();
+    protected :
+        int socket_fd;
+        TYPE type;
 
     public :
-        HttpServer(int socket_fd);
+        HttpAgent( int socket_fd , TYPE type);
+        int getSockeFd() const;
+        TYPE getType() const;
+        virtual ~HttpAgent();
 };
 

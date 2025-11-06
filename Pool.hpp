@@ -1,28 +1,28 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   HttpServer.hpp                                     :+:      :+:    :+:   */
+/*   Pool.hpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: franaivo <franaivo@student.42antananarivo  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/09/15 21:17:55 by franaivo          #+#    #+#             */
-/*   Updated: 2025/11/06 09:04:27 by franaivo         ###   ########.fr       */
+/*   Created: 2025/11/06 09:05:19 by franaivo          #+#    #+#             */
+/*   Updated: 2025/11/06 09:55:28 by franaivo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-# pragma once
+#pragma once
 
-#include <string>
+#include <map>
 #include "HttpAgent.hpp"
 
-class HttpServer : public HttpAgent
+class Pool 
 {
-    private :
-        std::string root;
+    private:
+        std::map<int, HttpAgent*> agents; 
 
-        HttpServer();
-
-    public :
-        HttpServer(int socket_fd);
+    public:
+        Pool();
+        ~Pool();
+        void add(unsigned int id , HttpAgent *agent);
+        HttpAgent* pull(unsigned int id) const;
 };
-

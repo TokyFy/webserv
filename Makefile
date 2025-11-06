@@ -1,7 +1,7 @@
 NAME = webserv
 
 FLAGS = -Wall -Wextra -Werror -std=c++98 -g
-SRC = webserv.cpp HttpServer.cpp 
+SRC = webserv.cpp HttpServer.cpp HttpClient.cpp HttpAgent.cpp Pool.cpp 
 
 OBJ = $(SRC:.cpp=.o)
 COMPILER = c++

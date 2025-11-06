@@ -1,28 +1,35 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   HttpServer.hpp                                     :+:      :+:    :+:   */
+/*   HttpAgent.cpp                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: franaivo <franaivo@student.42antananarivo  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/09/15 21:17:55 by franaivo          #+#    #+#             */
-/*   Updated: 2025/11/06 09:04:27 by franaivo         ###   ########.fr       */
+/*   Created: 2025/11/06 08:32:16 by franaivo          #+#    #+#             */
+/*   Updated: 2025/11/06 10:24:40 by franaivo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-# pragma once
-
-#include <string>
 #include "HttpAgent.hpp"
+#include <unistd.h>
 
-class HttpServer : public HttpAgent
+HttpAgent::HttpAgent( int socket_fd , TYPE type)
+    : socket_fd(socket_fd) , type(type) 
 {
-    private :
-        std::string root;
+    return;
+}
 
-        HttpServer();
+HttpAgent::~HttpAgent()
+{
+    return;
+}
 
-    public :
-        HttpServer(int socket_fd);
-};
+int HttpAgent::getSockeFd() const
+{
+    return socket_fd;
+}
 
+TYPE HttpAgent::getType() const 
+{
+    return type;
+}

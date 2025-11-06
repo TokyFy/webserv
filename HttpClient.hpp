@@ -1,28 +1,31 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   HttpServer.hpp                                     :+:      :+:    :+:   */
+/*   HttpClient.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: franaivo <franaivo@student.42antananarivo  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/09/15 21:17:55 by franaivo          #+#    #+#             */
-/*   Updated: 2025/11/06 09:04:27 by franaivo         ###   ########.fr       */
+/*   Created: 2025/11/06 08:25:15 by franaivo          #+#    #+#             */
+/*   Updated: 2025/11/06 09:00:38 by franaivo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-# pragma once
-
-#include <string>
 #include "HttpAgent.hpp"
+#include <string>
 
-class HttpServer : public HttpAgent
+enum STATE  { READ , WRITE , ERROR , CLOSED};
+
+class HttpClient : public HttpAgent
 {
     private :
-        std::string root;
+        STATE       state;
+        std::string rawHeaders;
+        int         file_fd;
+        int         server_id;
 
-        HttpServer();
+        HttpClient();
+
 
     public :
-        HttpServer(int socket_fd);
+        HttpClient(int socket_fd , int server_id);
 };
-

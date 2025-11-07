@@ -14,6 +14,8 @@
 #include "HttpServer.hpp"
 #include "HttpClient.hpp"
 #include "Pool.hpp"
+#include <sstream>
+#include <cstddef>
 #include <cstdlib>
 #include <cstring>
 #include <netinet/in.h>
@@ -30,6 +32,12 @@
 #define CHUNK_SIZE 32 * 1024
 
 int DEBUG = 0;
+
+std::string hex(size_t value) {
+    std::ostringstream oss;
+    oss << std::hex << std::nouppercase << value;
+    return oss.str();
+}
 
 int main() {
 	int server_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -88,19 +96,86 @@ int main() {
                 HttpClient* client = dynamic_cast<HttpClient*>(httpAgentPool.pull(event.data.fd));
 
                 int client_fd = client->getSockeFd();
+                
+                STATE t = client->getState();
+                
+                if(t == READ)
+                {
+                    std::cout << "ID : " << client_fd << " conected" << std::endl;
 
-                std::cout << client_fd << std::endl;
+                    event.events = EPOLLOUT;
+                        
+	                epoll_ctl(epoll, EPOLL_CTL_MOD, client_fd , &event);
+                    client->setState(WRITE);
+                    continue;
+                }
+                else if (t == WRITE)
+                {
+                    if(client->getFileFd() == -1)
+                    {
+                        int fd = open("./www/index.txt" , O_RDONLY);
+                        client->setFileFd(fd);
+                        client->setState(SEND_HEADER);
+                    }
+                    continue;
+                }
+                else if (t == SEND_HEADER)
+                {
+                    std::string header = 
+                        "HTTP/1.1 200 OK\r\n"
+                        "Content-Type: text/plain\r\n"
+                        "Transfer-Encoding: chunked\r\n"
+                        "Connection: close\r\n\r\n";
 
-                std::string greeting =
-                "HTTP/1.1 200 OK\r\n"
-                "Content-Type: text/plain\r\n"
-                "Content-Length: 12\r\n"
-                "\r\n"
-                "Hello world !";
+                    send(client_fd , header.c_str() , header.size() , MSG_DONTWAIT | MSG_NOSIGNAL);
+                    client->setState(SEND_DATA);
+                    continue;
+                }
+                else if (t == SEND_DATA)
+                {
+                    int fd = client->getFileFd();
 
+                    char buffer[CHUNK_SIZE];
+                    std::memset(buffer , 0 , sizeof(buffer));
+                    
+                    ssize_t readed = read(fd, buffer, sizeof(buffer));
 
-                std::cout << send( client_fd , greeting.c_str(), greeting.size(), MSG_DONTWAIT | MSG_NOSIGNAL) << std::endl;
-                httpAgentPool.erase(client_fd);
+                    if(readed > 0)
+                    {
+                        std::string len = hex(readed);
+                        // REMOVE THIS FOR THE SHAKE OF 42
+                        send(client_fd , len.c_str() , len.size() , MSG_DONTWAIT | MSG_NOSIGNAL);
+                        send(client_fd , "\r\n" , 2 , MSG_DONTWAIT | MSG_NOSIGNAL);
+                        send(client_fd , buffer , readed , MSG_DONTWAIT | MSG_NOSIGNAL);
+                        send(client_fd , "\r\n" , 2 , MSG_DONTWAIT | MSG_NOSIGNAL);
+                        
+                        continue;
+                    }
+
+                    if(readed == 0)
+                    {
+                        client->setState(SEND_EOF);
+                        continue;
+                    }
+                }
+                else if(t == SEND_EOF)
+                {
+                    std::cout << "END" << std::endl;
+                    ssize_t sent = send(client_fd, "0\r\n\r\n", 5 , MSG_DONTWAIT | MSG_NOSIGNAL);
+                
+                    if(sent <= 0)
+                    {
+                        std::cout << "ID " << client_fd << " closed " << std::endl;
+                        client->setState(CLOSED);
+                    }
+
+                    continue;
+                }
+                else if(t == CLOSED)
+                {
+                    httpAgentPool.erase(client_fd);
+                }
+
             }
         }
 

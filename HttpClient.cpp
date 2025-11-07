@@ -12,16 +12,41 @@
 
 #include "HttpClient.hpp"
 #include "HttpAgent.hpp"
+#include <stdexcept>
 #include <unistd.h>
 
 HttpClient::HttpClient(int socket_fd , int server_id)
-    : HttpAgent(socket_fd, CLIENT) , server_id(server_id)
+    : HttpAgent(socket_fd, CLIENT) , state(READ) , server_id(server_id) , rawHeaders("") , file_fd(-1)
 {
     return;
 }
 
 HttpClient::~HttpClient()
 {
-    close(file_fd);
+    if(file_fd != -1)
+        close(file_fd);
     close(socket_fd);
+}
+
+STATE HttpClient::getState() const 
+{
+    return state;
+}
+
+
+void HttpClient::setState(STATE t)
+{
+    state = t;
+}
+
+int HttpClient::getFileFd() const
+{
+    return  file_fd;
+}
+
+void HttpClient::setFileFd(int fd)
+{
+    if(file_fd != -1)
+        throw std::runtime_error("Attempting to overate fd");
+    file_fd = fd;
 }

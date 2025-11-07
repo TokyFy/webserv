@@ -13,15 +13,15 @@
 #include "HttpAgent.hpp"
 #include <string>
 
-enum STATE  { READ , WRITE , ERROR , CLOSED};
+enum STATE  { READ , WRITE , SEND_HEADER , SEND_DATA , SEND_EOF , ERROR , CLOSED};
 
 class HttpClient : public HttpAgent
 {
     private :
         STATE       state;
+        int         server_id;
         std::string rawHeaders;
         int         file_fd;
-        int         server_id;
 
         HttpClient();
 
@@ -29,4 +29,8 @@ class HttpClient : public HttpAgent
     public :
         ~HttpClient();
         HttpClient(int socket_fd , int server_id);
+        STATE   getState() const;
+        void    setState(STATE);
+        int     getFileFd() const;
+        void    setFileFd(int fd);
 };

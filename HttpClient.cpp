@@ -12,11 +12,12 @@
 
 #include "HttpClient.hpp"
 #include "HttpAgent.hpp"
+#include <cstring>
 #include <stdexcept>
 #include <unistd.h>
 
 HttpClient::HttpClient(int socket_fd , int server_id)
-    : HttpAgent(socket_fd, CLIENT) , state(READ) , server_id(server_id) , rawHeaders("") , file_fd(-1)
+    : HttpAgent(socket_fd, CLIENT) , state(READ) , server_id(server_id) , file_fd(-1)
 {
     return;
 }
@@ -49,4 +50,19 @@ void HttpClient::setFileFd(int fd)
     if(file_fd != -1)
         throw std::runtime_error("Attempting to overate fd");
     file_fd = fd;
+}
+
+
+void    HttpClient::appendRawHeader(const char* buff, size_t len)
+{
+    if(rawHeaders.size() == 0)
+        rawHeaders = buff;
+    else
+    rawHeaders.append(buff , len);
+}
+
+
+const std::string& HttpClient::getRawHeaders() const
+{
+    return rawHeaders;
 }

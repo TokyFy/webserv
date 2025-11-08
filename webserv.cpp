@@ -6,7 +6,7 @@
 /*   By: franaivo <franaivo@student.42antananarivo  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/15 22:16:05 by franaivo          #+#    #+#             */
-/*   Updated: 2025/11/06 10:24:07 by franaivo         ###   ########.fr       */
+/*   Updated: 2025/11/09 00:42:03 by franaivo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,6 @@
 #include "HttpServer.hpp"
 #include "HttpClient.hpp"
 #include "Pool.hpp"
-#include <sstream>
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
@@ -28,16 +27,10 @@
 #include <fcntl.h>
 #include <cstdio>
 #include <iostream>
+#include "utils.hpp"
 
-#define CHUNK_SIZE 32 * 1024
+#define CHUNK_SIZE 8 * 1024
 
-int DEBUG = 0;
-
-std::string hex(size_t value) {
-    std::ostringstream oss;
-    oss << std::hex << std::nouppercase << value;
-    return oss.str();
-}
 
 int main() {
 	int server_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -84,11 +77,13 @@ int main() {
             {
                 int client_fd = accept( event.data.fd, NULL , NULL);
                 struct epoll_event client_event;
-                client_event.events = EPOLLIN;
+                client_event.events = EPOLLIN | EPOLLOUT | EPOLLRDHUP;
                 client_event.data.fd = client_fd;
                 epoll_ctl(epoll , EPOLL_CTL_ADD , client_fd , &client_event);
 
                 httpAgentPool.add(client_fd, new HttpClient(client_fd , event.data.fd));
+
+                std::cerr << "ID " << client_fd << " connected" << std::endl;
                 continue;
             }
             else
@@ -101,33 +96,38 @@ int main() {
                 
                 if(t == READ)
                 {
-                    std::cout << "ID : " << client_fd << " conected" << std::endl;
+                    char buffer[CHUNK_SIZE];
+                    std::memset(buffer , 0 , CHUNK_SIZE);
 
-                    event.events = EPOLLOUT;
-                        
-	                epoll_ctl(epoll, EPOLL_CTL_MOD, client_fd , &event);
-                    client->setState(WRITE);
-                    continue;
+                    ssize_t readed = recv(client_fd, buffer, sizeof(buffer), MSG_NOSIGNAL | MSG_DONTWAIT); 
+                    
+                    if(readed > 0)
+                    {
+                        client->appendRawHeader(buffer, readed);
+                        std::cerr << getRequestPath(client->getRawHeaders()) << std::endl;
+                        client->setState(WRITE);
+                        continue;
+                    }
                 }
                 else if (t == WRITE)
                 {
                     if(client->getFileFd() == -1)
                     {
-                        int fd = open("./www/index.txt" , O_RDONLY);
+                        int fd = open("./www/400.html" , O_RDONLY);
                         client->setFileFd(fd);
-                        client->setState(SEND_HEADER);
                     }
+                    client->setState(SEND_HEADER);
                     continue;
                 }
                 else if (t == SEND_HEADER)
                 {
                     std::string header = 
                         "HTTP/1.1 200 OK\r\n"
-                        "Content-Type: text/plain\r\n"
+                        "Content-Type: text/html\r\n"
                         "Transfer-Encoding: chunked\r\n"
                         "Connection: close\r\n\r\n";
 
-                    send(client_fd , header.c_str() , header.size() , MSG_DONTWAIT | MSG_NOSIGNAL);
+                    send(client_fd , header.c_str() , header.size() , MSG_NOSIGNAL);
                     client->setState(SEND_DATA);
                     continue;
                 }
@@ -160,7 +160,6 @@ int main() {
                 }
                 else if(t == SEND_EOF)
                 {
-                    std::cout << "END" << std::endl;
                     ssize_t sent = send(client_fd, "0\r\n\r\n", 5 , MSG_DONTWAIT | MSG_NOSIGNAL);
                 
                     if(sent <= 0)

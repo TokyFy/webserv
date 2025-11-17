@@ -17,7 +17,6 @@
 #include "utils.hpp"
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <map>
 
 std::string hex(size_t value) 
 {
@@ -56,24 +55,17 @@ FILE_TYPE mime(const std::string& str)
     if(S_ISDIR(info.st_mode))
         return FOLDER;
 
-    static const std::map<std::string, FILE_TYPE > mime = {
-        {".html"    , HTML  },
-        {".htm"     , HTML  },
-        {".txt"     , TEXT  },
-        {".css"     , CSS   },
-        {".js"      , JS    },
-        {".png"     , PNG   },
-        {".jpg"     , JPEG  },
-        {".jpeg"    , JPEG  },
-        {".ico"     , ICO   },
-    };
-
     size_t pos = str.find_last_of('.');
     if (pos == std::string::npos)
         return BINARY;
 
     std::string ext = str.substr(pos);
-    std::map<std::string , FILE_TYPE>::const_iterator it = mime.find(ext);
+    
+    if(ext == ".html")
+        return HTML;
 
-    return (it != mime.end()) ? it->second : BINARY;
+    if(ext == ".txt")
+        return TEXT;
+
+    return BINARY;
 }

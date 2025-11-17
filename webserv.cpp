@@ -104,29 +104,38 @@ int main() {
                     if(readed > 0)
                     {
                         client->appendRawHeader(buffer, readed);
-                        std::cerr << getRequestPath(client->getRawHeaders()) << std::endl;
                         client->setState(WRITE);
                         continue;
                     }
                 }
                 else if (t == WRITE)
                 {
+                    FILE_TYPE t;
+                    int code;
+                    int file_fd;
+
                     if(client->getFileFd() == -1)
                     {
-                        int fd = open("./www/400.html" , O_RDONLY);
-                        client->setFileFd(fd);
-                    }
-                    client->setState(SEND_HEADER);
-                    continue;
-                }
-                else if (t == SEND_HEADER)
-                {
-                    std::string header = 
-                        "HTTP/1.1 200 OK\r\n"
-                        "Content-Type: text/html\r\n"
-                        "Transfer-Encoding: chunked\r\n"
-                        "Connection: close\r\n\r\n";
+                        std::string path = "./" + getRequestPath(client->getRawHeaders());
 
+                        std::cerr << path << std::endl;
+
+                        t = mime(path);
+
+                        if(t == ERR_DENIED || t == ERR_NOTFOUND || t == FOLDER)
+                        {
+                            file_fd = open("./www/400.html" , O_RDONLY);
+                            code = 400;
+                        }
+                        else {
+                            file_fd = open(path.c_str() , O_RDONLY);
+                            code = 200;
+                        }
+
+                        client->setFileFd(file_fd);
+                    }
+
+                    std::string header = header_builder(code , t); 
                     send(client_fd , header.c_str() , header.size() , MSG_NOSIGNAL);
                     client->setState(SEND_DATA);
                     continue;

@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include <fcntl.h>
+#include <filesystem>
 #include <sstream>
 #include <string>
 #include <unistd.h>
@@ -43,29 +44,87 @@ FILE_TYPE mime(const std::string& str)
 {
     const char *path = str.c_str();
 
-    if( access(path, F_OK) == -1)
+    // Check existence
+    if (access(path, F_OK) == -1)
         return ERR_NOTFOUND;
 
-    if(access(path, R_OK) == -1)
+    // Check readability
+    if (access(path, R_OK) == -1)
         return ERR_DENIED;
 
     struct stat info;
-    stat(path , &info);
+    if (stat(path, &info) == -1)
+        return BINARY; // fallback
 
-    if(S_ISDIR(info.st_mode))
+    // Directory
+    if (S_ISDIR(info.st_mode))
         return FOLDER;
 
+    // Get file extension
     size_t pos = str.find_last_of('.');
     if (pos == std::string::npos)
         return BINARY;
 
     std::string ext = str.substr(pos);
-    
-    if(ext == ".html")
-        return HTML;
 
-    if(ext == ".txt")
-        return TEXT;
+    // Map extensions to FILE_TYPE
+    if (ext == ".html" || ext == ".htm") return HTML;
+    if (ext == ".txt")                   return TEXT;
+    if (ext == ".css")                   return CSS;
+    if (ext == ".js")                    return JS;
+    if (ext == ".png")                   return PNG;
+    if (ext == ".jpg" || ext == ".jpeg") return JPEG;
+    if (ext == ".ico")                   return ICO;
+    if (ext == ".mp4")                   return MP4;
+    if (ext == ".mpeg" || ext == ".mpg") return MPEG;
 
+    // Default
     return BINARY;
+}
+
+
+std::string fileTypeToStr(FILE_TYPE t)
+{
+    switch (t)
+    {
+        case BINARY:       return "application/octet-stream";
+        case FOLDER:       return "text/html";
+        case TEXT:         return "text/plain";
+        case HTML:         return "text/html";
+        case CSS:          return "text/css";
+        case JS:           return "application/javascript";
+        case PNG:          return "image/png";
+        case JPEG:         return "image/jpeg";
+        case ICO:          return "image/x-icon";
+        case MP4:          return "video/mp4";
+        case MPEG:         return "video/mpeg";
+
+        // Errors (you can choose any MIME type; HTML is typical)
+        case ERR_DENIED:   return "text/html";
+        case ERR_NOTFOUND: return "text/html";
+    }
+
+    return "application/octet-stream";
+}
+
+
+std::string itos(int n)
+{
+    std::stringstream ss;
+    ss << n;
+    std::string s = ss.str();
+
+    return s;
+}
+
+std::string header_builder(int code , FILE_TYPE t)
+{
+
+    std::string scode = itos(code); 
+    std::string stype = fileTypeToStr(t);
+
+    return "HTTP/1.1 " + scode + " whatever\r\n"
+            "Content-Type: " + stype + "\r\n"
+            "Transfer-Encoding: chunked\r\n"
+            "Connection: close\r\n\r\n";
 }

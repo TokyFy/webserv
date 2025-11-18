@@ -122,6 +122,7 @@ int main() {
 
                         t = mime(path);
 
+                        // split this mf
                         if(t == ERR_DENIED || t == ERR_NOTFOUND || t == FOLDER)
                         {
                             file_fd = open("./www/400.html" , O_RDONLY);
@@ -155,9 +156,8 @@ int main() {
                         ssize_t sended = send(client_fd , chunk.c_str() , chunk.size() , MSG_NOSIGNAL | MSG_DONTWAIT);
 
                         if(sended < 0)
-                        {
                             client->setState(SEND_EOF);
-                        }
+
                         continue;
                     }
 
@@ -170,7 +170,7 @@ int main() {
                 else if(t == SEND_EOF)
                 {
                     ssize_t sent = send(client_fd, "0\r\n\r\n", 5 , MSG_DONTWAIT | MSG_NOSIGNAL);
-                
+
                     if(sent <= 0)
                     {
                         std::cout << "ID " << client_fd << " closed " << std::endl;

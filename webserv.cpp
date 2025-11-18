@@ -80,10 +80,7 @@ int main() {
                 client_event.events = EPOLLIN | EPOLLOUT | EPOLLRDHUP;
                 client_event.data.fd = client_fd;
                 epoll_ctl(epoll , EPOLL_CTL_ADD , client_fd , &client_event);
-
                 httpAgentPool.add(client_fd, new HttpClient(client_fd , event.data.fd));
-
-                std::cerr << "ID " << client_fd << " connected" << std::endl;
                 continue;
             }
             else
@@ -100,6 +97,8 @@ int main() {
                     std::memset(buffer , 0 , CHUNK_SIZE);
 
                     ssize_t readed = recv(client_fd, buffer, sizeof(buffer), MSG_NOSIGNAL | MSG_DONTWAIT); 
+
+                    std::cerr << "READ " << readed  << std::endl;
                     
                     if(readed > 0)
                     {
@@ -116,28 +115,40 @@ int main() {
 
                     if(client->getFileFd() == -1)
                     {
-                        std::string path = "./" + getRequestPath(client->getRawHeaders());
-
-                        std::cerr << path << std::endl;
+                        // Normalise path
+                        std::string path = "." + getRequestPath(client->getRawHeaders());
 
                         t = mime(path);
 
                         // split this mf
-                        if(t == ERR_DENIED || t == ERR_NOTFOUND || t == FOLDER)
+                        if(t == ERR_DENIED || t == ERR_NOTFOUND)
                         {
                             file_fd = open("./www/400.html" , O_RDONLY);
                             code = 400;
+                        }
+                        else if (t == FOLDER)
+                        {
+                            file_fd = indexof(path.c_str());
+                            code = 200;
                         }
                         else {
                             file_fd = open(path.c_str() , O_RDONLY);
                             code = 200;
                         }
-
+                        
                         client->setFileFd(file_fd);
+                        
+                        std::cerr << " " << code << " | " << "GET " << path << std::endl; 
+                    }
+                    std::string header = header_builder(code , t); 
+                    ssize_t sended = send(client_fd , header.c_str() , header.size() , MSG_NOSIGNAL);
+                    
+                    if(sended <= 0)
+                    {
+                        client->setState(SEND_EOF);
+                        continue;
                     }
 
-                    std::string header = header_builder(code , t); 
-                    send(client_fd , header.c_str() , header.size() , MSG_NOSIGNAL);
                     client->setState(SEND_DATA);
                     continue;
                 }
@@ -173,7 +184,6 @@ int main() {
 
                     if(sent <= 0)
                     {
-                        std::cout << "ID " << client_fd << " closed " << std::endl;
                         client->setState(CLOSED);
                     }
 

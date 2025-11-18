@@ -10,13 +10,17 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include <cstddef>
 #include <fcntl.h>
+#include <iostream>
 #include <sstream>
 #include <string>
 #include <unistd.h>
 #include "utils.hpp"
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <stdio.h>
+#include <dirent.h>
 
 std::string hex(size_t value) 
 {
@@ -136,4 +140,55 @@ std::string to_chuncked(const char* buff , ssize_t len)
     chunk += std::string(buff , len) + "\r\n";
 
     return chunk;
+}
+
+std::string normalize_path(std::string path)
+{
+    if (!path.empty() && path[0] == '.' && path[1] == '/')
+        path.erase(0, 2);
+
+    return path;
+}
+
+int indexof(const char * path)
+{
+    DIR *folder = opendir(path);
+
+    if(!folder)
+        return -1;
+
+    int pipefd[2];
+
+    if(pipe(pipefd) == -1)
+    {
+        closedir(folder);
+        return -1;
+    }
+
+    struct dirent *entry;
+
+    std::stringstream html;
+
+    html << "<html><head>";
+    html << "<title>Index of</title>";
+    html << "<style> body { font-family: monospace; line-height: 0.5em; } </style>";
+    html << "</head><body>";
+    html << "<br/><p>INDEX OF : " << normalize_path(path) << "</p><br/><hr>";
+
+
+    while((entry = readdir(folder)) != NULL)
+    {
+        html << "<p> * " << "<a href=\"" << normalize_path(path) << "/" << entry->d_name << "\">" << entry->d_name << "</a></p>";  
+    }
+
+    html << "</body></html>";
+
+    std::string output = html.str();
+
+    write(pipefd[1], output.c_str(), output.size());
+    close(pipefd[1]);
+
+    closedir(folder);
+
+    return pipefd[0]; 
 }

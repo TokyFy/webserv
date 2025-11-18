@@ -3,4 +3,5 @@
 *.idea
 */*.idea
 */.clangd
+*.mp4
 webserv

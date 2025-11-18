@@ -25,14 +25,13 @@ class HttpClient : public HttpAgent
 
         HttpClient();
 
-
     public :
         ~HttpClient();
         HttpClient(int socket_fd , int server_id);
-        STATE   getState() const;
-        void    setState(STATE);
-        int     getFileFd() const;
-        void    setFileFd(int fd);
-        void    appendRawHeader(const char* , size_t);
+        STATE       getState() const;
+        void        setState(STATE);
+        int         getFileFd() const;
+        void        setFileFd(int fd);
+        void        appendRawHeader(const char* , size_t);
         const std::string& getRawHeaders() const;
 };

@@ -12,12 +12,14 @@
 
 #include "HttpClient.hpp"
 #include "HttpAgent.hpp"
+#include <cstddef>
 #include <cstring>
+#include <ctime>
 #include <stdexcept>
 #include <unistd.h>
 
 HttpClient::HttpClient(int socket_fd , int server_id)
-    : HttpAgent(socket_fd, CLIENT) , state(READ) , server_id(server_id) , file_fd(-1)
+    : HttpAgent(socket_fd, CLIENT) , state(READ) , server_id(server_id) , file_fd(-1) , time(0)
 {
     return;
 }
@@ -65,4 +67,14 @@ void    HttpClient::appendRawHeader(const char* buff, size_t len)
 const std::string& HttpClient::getRawHeaders() const
 {
     return rawHeaders;
+}
+
+void HttpClient::setTime(std::time_t t)
+{
+    time = t;
+}
+
+std::time_t HttpClient::getTimeOut() const 
+{
+    return std::time(NULL) - time;
 }

@@ -17,6 +17,7 @@
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
+#include <ctime>
 #include <netinet/in.h>
 #include <string>
 #include <sys/socket.h>
@@ -80,32 +81,34 @@ int main() {
                 client_event.events = EPOLLIN | EPOLLOUT | EPOLLRDHUP;
                 client_event.data.fd = client_fd;
                 epoll_ctl(epoll , EPOLL_CTL_ADD , client_fd , &client_event);
-                httpAgentPool.add(client_fd, new HttpClient(client_fd , event.data.fd));
+
+                HttpClient *new_client = new HttpClient(client_fd , event.data.fd);
+                new_client->setTime(std::time(NULL));
+
+                httpAgentPool.add(client_fd, new_client);
                 continue;
             }
             else
             {
                 HttpClient* client = dynamic_cast<HttpClient*>(httpAgentPool.pull(event.data.fd));
-
                 int client_fd = client->getSockeFd();
-                
                 STATE t = client->getState();
                 
                 if(t == READ)
                 {
                     char buffer[CHUNK_SIZE];
                     std::memset(buffer , 0 , CHUNK_SIZE);
-
                     ssize_t readed = recv(client_fd, buffer, sizeof(buffer), MSG_NOSIGNAL | MSG_DONTWAIT); 
 
-                    std::cerr << "READ " << readed  << std::endl;
-                    
                     if(readed > 0)
                     {
                         client->appendRawHeader(buffer, readed);
                         client->setState(WRITE);
                         continue;
                     }
+
+                    if(client->getTimeOut() >= 10)
+                        client->setState(SEND_EOF);
                 }
                 else if (t == WRITE)
                 {
@@ -117,7 +120,6 @@ int main() {
                     {
                         // Normalise path
                         std::string path = "." + getRequestPath(client->getRawHeaders());
-
                         t = mime(path);
 
                         // split this mf
@@ -154,9 +156,15 @@ int main() {
                 }
                 else if (t == SEND_DATA)
                 {
+                    char buffer[CHUNK_SIZE];
                     int fd = client->getFileFd();
 
-                    char buffer[CHUNK_SIZE];
+                    if(fd == -1)
+                    {
+                        client->setState(SEND_EOF);
+                        continue;
+                    }
+
                     std::memset(buffer , 0 , sizeof(buffer));
                     
                     ssize_t readed = read(fd, buffer, sizeof(buffer));
@@ -174,19 +182,18 @@ int main() {
 
                     if(readed == 0)
                     {
+                        client->setTime(std::time(NULL));
+                        send(client_fd, "0\r\n\r\n", 5 , MSG_DONTWAIT | MSG_NOSIGNAL);
                         client->setState(SEND_EOF);
                         continue;
                     }
                 }
                 else if(t == SEND_EOF)
                 {
-                    ssize_t sent = send(client_fd, "0\r\n\r\n", 5 , MSG_DONTWAIT | MSG_NOSIGNAL);
-
-                    if(sent <= 0)
+                    if(client->getTimeOut() >= 5 )
                     {
                         client->setState(CLOSED);
                     }
-
                     continue;
                 }
                 else if(t == CLOSED)

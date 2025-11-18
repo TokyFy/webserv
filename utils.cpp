@@ -11,7 +11,6 @@
 /* ************************************************************************** */
 
 #include <fcntl.h>
-#include <filesystem>
 #include <sstream>
 #include <string>
 #include <unistd.h>
@@ -127,4 +126,14 @@ std::string header_builder(int code , FILE_TYPE t)
             "Content-Type: " + stype + "\r\n"
             "Transfer-Encoding: chunked\r\n"
             "Connection: close\r\n\r\n";
+}
+
+std::string to_chuncked(const char* buff , ssize_t len)
+{
+    std::string chunk;
+    
+    chunk += hex(len) + "\r\n";
+    chunk += std::string(buff , len) + "\r\n";
+
+    return chunk;
 }

@@ -6,3 +6,4 @@ std::string hex(size_t value);
 std::string getRequestPath(const std::string &header);
 FILE_TYPE   mime(const std::string&);
 std::string header_builder(int code , FILE_TYPE t);
+std::string to_chuncked(const char* buff , ssize_t len);

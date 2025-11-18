@@ -151,13 +151,13 @@ int main() {
 
                     if(readed > 0)
                     {
-                        std::string len = hex(readed);
-                        // REMOVE THIS FOR THE SHAKE OF 42
-                        send(client_fd , len.c_str() , len.size() , MSG_DONTWAIT | MSG_NOSIGNAL);
-                        send(client_fd , "\r\n" , 2 , MSG_DONTWAIT | MSG_NOSIGNAL);
-                        send(client_fd , buffer , readed , MSG_DONTWAIT | MSG_NOSIGNAL);
-                        send(client_fd , "\r\n" , 2 , MSG_DONTWAIT | MSG_NOSIGNAL);
-                        
+                        std::string chunk = to_chuncked(buffer, readed);                        
+                        ssize_t sended = send(client_fd , chunk.c_str() , chunk.size() , MSG_NOSIGNAL | MSG_DONTWAIT);
+
+                        if(sended < 0)
+                        {
+                            client->setState(SEND_EOF);
+                        }
                         continue;
                     }
 

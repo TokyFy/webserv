@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include <cstddef>
+#include <cstring>
 #include <fcntl.h>
 #include <iostream>
 #include <sstream>
@@ -178,6 +179,10 @@ int indexof(const char * path)
 
     while((entry = readdir(folder)) != NULL)
     {
+        if(std::strcmp(entry->d_name , "..") == 0 || std::strcmp(entry->d_name , ".") == 0)
+            continue;
+
+
         html << "<p> * " << "<a href=\"" << normalize_path(path) << "/" << entry->d_name << "\">" << entry->d_name << "</a></p>";  
     }
 

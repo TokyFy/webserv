@@ -114,11 +114,11 @@ int main() {
                 {
                     FILE_TYPE t;
                     int code;
-                    int file_fd;
+                    int file_fd = -1;
 
                     if(client->getFileFd() == -1)
                     {
-                        // Normalise path
+                        // Normalishttp://localhost:8080/e path
                         std::string path = "." + getRequestPath(client->getRawHeaders());
                         t = mime(path);
 
@@ -166,7 +166,6 @@ int main() {
                     }
 
                     std::memset(buffer , 0 , sizeof(buffer));
-                    
                     ssize_t readed = read(fd, buffer, sizeof(buffer));
 
                     if(readed > 0)

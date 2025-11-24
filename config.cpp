@@ -10,8 +10,12 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include <algorithm>
+#include <cctype>
+#include <cstring>
 #include <fstream>
 #include <iostream>
+#include <ostream>
 #include <string>
 
 int main(int argc , char **argv)
@@ -30,11 +34,35 @@ int main(int argc , char **argv)
         return 1;
     }
 
-    std::string token;
+    std::string line;
 
-    while (std::getline(config , token , ' '))
+    while (std::getline(config , line))
     {
-        std::cerr << token << std::endl;
+        const char *c = line.c_str();
+        std::string token;
+
+        while (*c) {
+            if(std::isspace(*c))
+            {
+                std::cerr << token << std::endl; token.clear();
+                while (std::isspace(*c)) {
+                    c++;
+                }
+                continue;
+            }
+
+            if( *c == '\n' || *c == ';' )
+            {
+                std::cerr << token << std::endl ; token.clear();
+            }
+
+            token += *c;
+            c++;
+        }
+
+        if(token.length())
+            std::cerr << token << std::endl;
+
     }
 
     config.close();

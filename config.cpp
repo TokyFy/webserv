@@ -10,7 +10,6 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include <algorithm>
 #include <cctype>
 #include <cstring>
 #include <fstream>
@@ -18,8 +17,36 @@
 #include <ostream>
 #include <string>
 
+enum TokenType {
+    // Structural tokens
+    TOKEN_LBRACE,               // {
+    TOKEN_RBRACE,               // }
+    TOKEN_SEMICOLON,            // ;
+    
+    // Comments
+    TOKEN_COMMENT,              // # This is a comment
+
+    // Keywords (directives)
+    TOKEN_LOCATION,             // location
+    TOKEN_LISTEN,               // listen
+    TOKEN_ROOT,                 // root
+    TOKEN_INDEX,                // index
+    TOKEN_CLIENT_MAX_BODY_SIZE, // client_max_body_size
+    TOKEN_ERROR_PAGE,           // error_page
+    TOKEN_ALLOW_METHODS,        // allow_methods
+    TOKEN_AUTOINDEX,            // autoindex
+    TOKEN_CGI_PATH,             // cgi_path
+    TOKEN_CGI_EXT,              // cgi_ext
+
+    // Values
+    TOKEN_WORDS
+};
+
+enum PARSER_STATE { NONE , SERVER , LOCATION };
+
 int main(int argc , char **argv)
 {
+
     if(argc > 2)
     {
         std::cerr << "Usage : webserv [ config.conf ]" << std::endl;
@@ -51,7 +78,7 @@ int main(int argc , char **argv)
                 continue;
             }
 
-            if( *c == '\n' || *c == ';' )
+            if( *c == '\n' || *c == ';')
             {
                 std::cerr << token << std::endl ; token.clear();
             }

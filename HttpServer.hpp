@@ -34,6 +34,17 @@ class Location
         std::string cgi_path;
         std::string cgi_ext;
         std::string error_pages[0x255];
+
+    public:
+        Location();
+        ~Location();
+
+        const std::string&  getIndex() const;
+        void                setIndex(const std::string& value);
+        bool                getAutoIndex() const;
+        void                setAutoIndex(bool value);
+        const std::string&  getRoot() const;
+        void                setRoot(const std::string& value);
 };
 
 class HttpServer : public HttpAgent
@@ -49,5 +60,12 @@ class HttpServer : public HttpAgent
     public :
         ~HttpServer();
         HttpServer(int socket_fd);
+
+        ssize_t             getClientMaxBodySize() const;
+        void                setClientMaxBodySize(ssize_t value);
+        int                 getPort() const;
+        void                setPort(int value);
+        const std::string&  getInterface() const;
+        void                setInterface(const std::string& value);
 };
 

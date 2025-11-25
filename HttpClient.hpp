@@ -30,12 +30,12 @@ class HttpClient : public HttpAgent
     public :
         ~HttpClient();
         HttpClient(int socket_fd , int server_id);
-        STATE       getState() const;
-        void        setState(STATE);
-        int         getFileFd() const;
-        void        setFileFd(int fd);
-        void        appendRawHeader(const char* , size_t);
-        void        setTime(std::time_t t);
-        std::time_t getTimeOut() const;
-        const std::string& getRawHeaders() const;
+        STATE               getState() const;
+        void                setState(STATE);
+        int                 getFileFd() const;
+        void                setFileFd(int fd);
+        void                appendRawHeader(const char* , size_t);
+        void                setTime(std::time_t t);
+        std::time_t         getTimeOut() const;
+        const std::string&  getRawHeaders() const;
 };

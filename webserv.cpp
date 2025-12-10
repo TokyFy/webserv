@@ -112,17 +112,15 @@ int main() {
                 }
                 else if (t == WRITE)
                 {
-                    FILE_TYPE t;
-                    int code;
+                    FILE_TYPE t = BINARY;
+                    int code = 0;
                     int file_fd = -1;
 
                     if(client->getFileFd() == -1)
                     {
-                        // Normalishttp://localhost:8080/e path
                         std::string path = "." + getRequestPath(client->getRawHeaders());
                         t = mime(path);
 
-                        // split this mf
                         if(t == ERR_DENIED || t == ERR_NOTFOUND)
                         {
                             file_fd = open("./www/400.html" , O_RDONLY);

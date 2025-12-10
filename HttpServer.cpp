@@ -16,8 +16,8 @@
 #include <unistd.h>
 
 HttpServer::HttpServer(int socket_fd)
-    : HttpAgent(socket_fd, SERVER) , client_max_body_size(1024) , port(-1) ,
-        interface("0.0.0.0")
+    : HttpAgent(socket_fd, SERVER) , client_max_body_size(1024) , port(-1),
+        interface("0.0.0.0") 
 {
     int i = 0;
 
@@ -76,6 +76,7 @@ Location::Location()
 
 Location::~Location()
 {
+    (void)(allow_methods);
     return;
 }
 

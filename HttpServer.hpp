@@ -51,6 +51,7 @@ class HttpServer : public HttpAgent
 {
     private :
         HttpServer();
+        std::string name;
         ssize_t     client_max_body_size;
         int         port;
         std::string interface;
@@ -60,6 +61,7 @@ class HttpServer : public HttpAgent
     public :
         ~HttpServer();
         HttpServer(int socket_fd);
+        HttpServer(int socket_fd , std::string name);
 
         ssize_t             getClientMaxBodySize() const;
         void                setClientMaxBodySize(ssize_t value);

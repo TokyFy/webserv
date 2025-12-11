@@ -14,12 +14,13 @@
 #include <cstring>
 #include <fstream>
 #include <iostream>
-#include <iterator>
 #include <ostream>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector> 
 #include <iomanip>
+#include "HttpServer.hpp"
 
 struct s_location_config
 {
@@ -63,10 +64,10 @@ enum TokenType {
     TOKEN_CGI_EXT,              // cgi_ext
 
                                 // Values
-    TOKEN_WORDS
+    TOKEN_WORDS,
+    TOKEN_EOF
 };
 
-enum PARSER_STATE { NONE , SERVER , LOCATION };
 
 unsigned int keyword_hash(const std::string& s)
 {
@@ -96,6 +97,7 @@ const char* token_type_to_string(TokenType type)
         case TOKEN_ALLOW_METHODS:         return "TOKEN_ALLOW_METHODS";
         case TOKEN_CLIENT_MAX_BODY_SIZE:  return "TOKEN_CLIENT_MAX_BODY_SIZE";
         case TOKEN_WORDS:                 return "TOKEN_WORDS";
+        case TOKEN_EOF:                 return "TOKEN_EOF";
     }
     return "UNKNOWN_TOKEN";
 }
@@ -123,22 +125,13 @@ TokenType get_token_type(std::string &token)
     }
 }
 
-int main(int argc , char **argv)
+std::vector<std::pair<TokenType, std::string> > tokenizer(std::ifstream &config)
 {
-
     std::vector<std::pair<TokenType, std::string> > tokens;
 
-    if(argc > 2)
-    {
-        return 0;
-    }
-
-    std::ifstream config(argv[1]);
-
     if(!config.is_open())
-    {
-        return 1;
-    }
+        return tokens;
+
 
     std::string line;
 
@@ -188,12 +181,73 @@ int main(int argc , char **argv)
         tokens.push_back(std::make_pair(TOKEN_RETURN , token));
     }
 
-    config.close();
-    
-    for(unsigned int i = 0 ; i < tokens.size() ; i++)
+    tokens.push_back(std::make_pair(TOKEN_EOF, "EOF"));
+    return tokens;
+}
+
+enum PARSER_STATE { NONE , BLOCK_SERVER , BLOCK_SERVER_ENTER , BLOCK_LOCATION , BLOCK_LOCATION_ENTER};
+
+int main(int argc , char **argv)
+{
+
+
+    if(argc > 2)
     {
-        std::cerr << std::left << std::setw(30) << token_type_to_string(tokens[i].first) << tokens[i].second << std::endl;
+        return 0;
     }
+
+    std::ifstream config(argv[1]);
+
+    if(!config.is_open())
+    {
+        return 1;
+    }
+
+    std::vector<std::pair<TokenType, std::string> > tokens = tokenizer(config);
+    
+    PARSER_STATE state = NONE;
+    HttpServer* servers[0xA];
+    int         server_count = 0;
+    std::memset(servers , 0 , sizeof(servers) );
+
+    int i = 0;
+
+    while(i < tokens.size())
+    {
+        TokenType type      = tokens[i].first;
+        std::string value   = tokens[i].second;
+
+        if(state == NONE)
+        {
+            if(type != TOKEN_WORDS)
+                throw std::runtime_error("Special token should be inside a server");
+
+            state = BLOCK_SERVER_ENTER;
+            i++;
+            continue;
+        }
+
+        if(state == BLOCK_SERVER_ENTER)
+        {
+            if(type != TOKEN_LBRACE)
+                throw std::runtime_error("Block server should be surounded by {*}");
+
+
+            servers[server_count] = new HttpServer(-1 , "server");
+
+            state = BLOCK_SERVER;
+            i++;
+            continue;
+        }
+
+        if(state == BLOCK_SERVER)
+        {
+            
+        }
+
+        i++;
+    }
+
 
     return 0;
 }

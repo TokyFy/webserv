@@ -16,8 +16,21 @@
 #include <unistd.h>
 
 HttpServer::HttpServer(int socket_fd)
-    : HttpAgent(socket_fd, SERVER) , client_max_body_size(1024) , port(-1),
-        interface("0.0.0.0") 
+    : HttpAgent(socket_fd, SERVER) , name("~ SERVER ~") , client_max_body_size(1024) , port(-1) ,
+        interface("0.0.0.0")
+{
+    int i = 0;
+
+    while (i < 0x0F) {
+        locations[i++] = NULL;
+    }
+
+    return;
+}
+
+HttpServer::HttpServer(int socket_fd , std::string name)
+    : HttpAgent(socket_fd, SERVER) , name(name) , client_max_body_size(1024) , port(-1) ,
+        interface("0.0.0.0")
 {
     int i = 0;
 

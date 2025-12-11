@@ -24,6 +24,6 @@ fclean: clean
 re: fclean $(NAME)
 
 c: 
-	$(COMPILER) $(FLAGS) config.cpp -o webserv
+	$(COMPILER) $(FLAGS) HttpServer.cpp HttpAgent.cpp config.cpp -o webserv
 
 .PHONY: clean fclean re

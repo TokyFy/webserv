@@ -12,8 +12,10 @@
 
 # pragma once
 
+#include <map>
 #include <string>
 #include <sys/types.h>
+#include <vector>
 #include "HttpAgent.hpp"
 
 enum HttpMethod {
@@ -25,6 +27,7 @@ enum HttpMethod {
 class Location
 {
     private:
+        std::string source;
         std::string index;
         bool        autoindex;
         std::string root;
@@ -33,12 +36,13 @@ class Location
         int         allow_methods;
         std::string cgi_path;
         std::string cgi_ext;
-        std::string error_pages[0x255];
 
     public:
         Location();
         ~Location();
 
+        const std::string&  getSource() const;
+        void                setSource(const std::string& value);
         const std::string&  getIndex() const;
         void                setIndex(const std::string& value);
         bool                getAutoIndex() const;
@@ -55,7 +59,8 @@ class HttpServer : public HttpAgent
         ssize_t     client_max_body_size;
         int         port;
         std::string interface;
-        Location*   locations[0x0F];
+        std::vector<Location> location;
+        std::map<int , std::string> error_pages;
         
 
     public :
@@ -69,5 +74,7 @@ class HttpServer : public HttpAgent
         void                setPort(int value);
         const std::string&  getInterface() const;
         void                setInterface(const std::string& value);
+        void                setErrorPage(int code , std::string path);
+        const std::string&  getErrorPage(int code);
 };
 

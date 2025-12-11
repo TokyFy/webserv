@@ -12,6 +12,9 @@
 
 #include "HttpServer.hpp"
 #include "HttpAgent.hpp"
+#include <iostream>
+#include <stdexcept>
+#include <string>
 #include <strings.h>
 #include <unistd.h>
 
@@ -77,13 +80,31 @@ void    HttpServer::setInterface(const std::string& value)
     interface = value;
 }
 
+void HttpServer::setErrorPage(int code , std::string path)
+{
+    if(code <= 0 || code >= 0x255)
+        throw std::runtime_error("Invalid error code");
+    
+    error_pages[code] = path; 
+}
+
+const std::string& HttpServer::getErrorPage(int code) {
+
+    (void)(code);
+
+    std::map<int,std::string>::const_iterator it = error_pages.find(code);
+    if (it == error_pages.end())
+        throw std::runtime_error("Error page not found");
+
+    return it->second;
+}
+
+
 // Location Object
 
 Location::Location()
-    : index("index.html") , autoindex(true) , root("/") , allow_methods(0b111)
+    : source("/") , index("index.html") , autoindex(true) , root("/") , allow_methods(0b111)
 {
-    error_pages[400] = "/www/400.html";
-
     return;
 }
 
@@ -91,6 +112,14 @@ Location::~Location()
 {
     (void)(allow_methods);
     return;
+}
+
+const std::string& Location::getSource() const {
+    return source;
+}
+
+void Location::setSource(const std::string& value) {
+    source = value;
 }
 
 const std::string& Location::getIndex() const {

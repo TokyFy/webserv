@@ -349,12 +349,12 @@ void parse_error_page(HttpServer *server , std::vector<t_token> &tokens)
 
 void parse_location(HttpServer *server , std::vector<t_token> &tokens)
 {
-    int location_count = -1;
-
     tokens.erase(tokens.begin());
 
     if(tokens[0].first != TOKEN_WORDS)
         throw std::runtime_error("Missing source for location");
+
+    Location location;
 
     // PARSE LOCATION
 

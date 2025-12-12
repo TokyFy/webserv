@@ -12,10 +12,10 @@
 
 #include <algorithm>
 #include <cctype>
+#include <clocale>
 #include <cstring>
 #include <exception>
 #include <fstream>
-#include <locale>
 #include <stdexcept>
 #include <string>
 #include <sys/types.h>
@@ -65,8 +65,7 @@ enum TokenType {
     TOKEN_ERROR_PAGE,           // error_page
     TOKEN_ALLOW_METHODS,        // allow_methods
     TOKEN_AUTOINDEX,            // autoindex
-    TOKEN_CGI_PATH,             // cgi_path
-    TOKEN_CGI_EXT,              // cgi_ext
+    TOKEN_CGI,                  // cgi
 
                                 // Values
     TOKEN_WORDS,
@@ -94,8 +93,7 @@ const char* token_type_to_string(TokenType type)
         case TOKEN_RBRACE:                return "TOKEN_RBRACE";
         case TOKEN_RETURN:                return "TOKEN_RETURN";
         case TOKEN_COMMENT:               return "TOKEN_COMMENT";
-        case TOKEN_CGI_EXT:               return "TOKEN_CGI_EXT";
-        case TOKEN_CGI_PATH:              return "TOKEN_CGI_PATH";
+        case TOKEN_CGI:                   return "TOKEN_CGI";
         case TOKEN_LOCATION:              return "TOKEN_LOCATION";
         case TOKEN_SEMICOLON:             return "TOKEN_SEMICOLON";
         case TOKEN_ERROR_PAGE:            return "TOKEN_ERROR_PAGE";
@@ -117,8 +115,7 @@ TokenType get_token_type(std::string &token)
         case 0x0000007Du    : return TOKEN_RBRACE;
         case 0x0000000Au    : return TOKEN_RETURN;
         case 0x00000023u    : return TOKEN_COMMENT;
-        case 0x2AC06F67u    : return TOKEN_CGI_EXT;
-        case 0x2D52279Fu    : return TOKEN_CGI_PATH;
+        case 0x00018085u    : return TOKEN_CGI;
         case 0x714F9FB5u    : return TOKEN_LOCATION;
         case 0x0000003Bu    : return TOKEN_SEMICOLON;
         case 0x61844E66u    : return TOKEN_ERROR_PAGE;
@@ -164,7 +161,7 @@ std::vector<std::pair<TokenType, std::string> > tokenizer(std::ifstream &config)
                 c++;
                 continue;
             }
-            if(std::isspace(*c))
+            if(std::isspace(*c) && token.length() != 0)
             {
                 tokens.push_back(std::make_pair( get_token_type(token) , token)); 
                 token.clear();
@@ -173,7 +170,9 @@ std::vector<std::pair<TokenType, std::string> > tokenizer(std::ifstream &config)
                 }
                 continue;
             }
-            token += *c;
+
+            if(!std::isspace(*c))
+                token += *c;
             c++;
         }
 
@@ -347,75 +346,225 @@ void parse_error_page(HttpServer *server , std::vector<t_token> &tokens)
     return;
 }
 
+void parse_location_root(Location *location , std::vector<t_token> &tokens)
+{
+    tokens.erase(tokens.begin());
+    
+    if(tokens[0].first != TOKEN_WORDS)
+        throw std::runtime_error("Missing path for root");
+
+    location->setRoot(tokens[0].second);
+
+    tokens.erase(tokens.begin());
+
+    if(tokens[0].first != TOKEN_SEMICOLON)
+        throw std::runtime_error("Missing ; after root");
+
+    tokens.erase(tokens.begin());
+
+    std::cout << location->getSource() << " | root : " << location->getRoot() << std::endl;
+}
+
+void parse_location_methods(Location *location , std::vector<t_token> &tokens)
+{
+    tokens.erase(tokens.begin()); 
+
+    try 
+    {
+        while (tokens[0].first == TOKEN_WORDS) {
+            location->addAllowedMethod(tokens[0].second); 
+            tokens.erase(tokens.begin());
+        }
+    }
+    catch(std::exception &e)
+    {
+        throw std::runtime_error("Allowed method : " + std::string(e.what()));
+    }
+
+    if(tokens[0].first != TOKEN_SEMICOLON)
+        throw std::runtime_error("Missing semicolon on allowed method");
+    
+    tokens.erase(tokens.begin());
+    
+    std::cout   << location->getSource() 
+                << " | GET " << location->isAllowedMethod("GET") 
+                << " | POST " << location->isAllowedMethod("POST") 
+                << " | DELETE " << location->isAllowedMethod("DELETE") << std::endl; 
+    
+    return;
+}
+
+void parse_location_index(Location *location , std::vector<t_token> &tokens)
+{
+    tokens.erase(tokens.begin());
+    
+    if(tokens[0].first != TOKEN_WORDS)
+        throw std::runtime_error("Missing index");
+
+    location->setIndex(tokens[0].second);
+    
+    tokens.erase(tokens.begin());
+
+    if(tokens[0].first != TOKEN_SEMICOLON)
+        throw std::runtime_error("Missing semiconlon on index");
+
+    tokens.erase(tokens.begin());
+
+    std::cout << location->getSource() << " | index : " << location->getIndex() << std::endl;
+}
+
+void parse_location_cgi(Location *location , std::vector<t_token> &tokens)
+{
+    tokens.erase(tokens.begin());
+    
+    if(tokens[0].first != TOKEN_WORDS)
+        throw std::runtime_error("Missing path in cgi");
+
+    location->setCgiPath(tokens[0].second);
+    
+    tokens.erase(tokens.begin());
+
+    if(tokens[0].first != TOKEN_WORDS)
+        throw std::runtime_error("Missing path in cgi");
+
+    location->setCgiExt(tokens[0].second);
+    
+    tokens.erase(tokens.begin());
+
+    if(tokens[0].first != TOKEN_SEMICOLON)
+        throw std::runtime_error("Missing semiconlon on cgi");
+
+    tokens.erase(tokens.begin());
+
+    std::cout << location->getSource() << " | cgi : " << location->getCgiPath() << " , "
+        << location->getCgiExt() << std::endl;
+}
+
+void parse_location_autoindex(Location *location , std::vector<t_token> &tokens)
+{
+    tokens.erase(tokens.begin());
+    
+    if(tokens[0].first != TOKEN_WORDS)
+        throw std::runtime_error("Missing value autoindex");
+
+    if(tokens[0].second == "true")
+        location->setAutoIndex(true);
+    else if(tokens[0].second == "false")
+        location->setAutoIndex(false);
+    else    
+        throw std::runtime_error("Unkown autoindex value");
+
+    tokens.erase(tokens.begin());
+
+    if(tokens[0].first != TOKEN_SEMICOLON)
+        throw std::runtime_error("Missing semiconlon on autoindex");
+
+    tokens.erase(tokens.begin());
+
+    std::cout << location->getSource() << " | autoindex : " << location->getAutoIndex() << std::endl;
+}
+
+void parse_comment(std::vector<t_token> &tokens)
+{
+    if(tokens[0].first != TOKEN_COMMENT)
+        return;
+
+    tokens.erase(tokens.begin());
+
+    while(tokens[0].first != TOKEN_RETURN)
+    {
+        if(tokens[0].first == TOKEN_EOF)
+            break;
+
+        tokens.erase(tokens.begin());
+    }
+
+    tokens.erase(tokens.begin());
+}
+
 void parse_location(HttpServer *server , std::vector<t_token> &tokens)
 {
+    Location location;
+    
     tokens.erase(tokens.begin());
 
     if(tokens[0].first != TOKEN_WORDS)
         throw std::runtime_error("Missing source for location");
 
-    Location location;
+    location.setSource(tokens[0].second);
+    tokens.erase(tokens.begin());
 
-    // PARSE LOCATION
+    if(tokens[0].first != TOKEN_LBRACE)
+        throw std::runtime_error("Missig { before localisation");
 
+    tokens.erase(tokens.begin());
+
+    while (tokens.size() > 0) {
+        TokenType type = tokens[0].first;
+        std::string value = tokens[0].second;
+
+        if(type == TOKEN_RBRACE || type == TOKEN_EOF)
+            break;
+
+        if(type == TOKEN_RETURN)
+        {
+            tokens.erase(tokens.begin());
+            continue;
+        } 
+
+        switch (type) {
+            case TOKEN_ROOT :
+                parse_location_root(&location, tokens); break;
+            case TOKEN_ALLOW_METHODS :
+                parse_location_methods(&location, tokens); break;
+            case TOKEN_INDEX:
+                parse_location_index(&location, tokens); break;
+            case TOKEN_CGI :
+                parse_location_cgi(&location , tokens); break;
+            case TOKEN_AUTOINDEX :
+                parse_location_autoindex(&location , tokens); break;
+            case TOKEN_COMMENT :
+                parse_comment(tokens); break; 
+            default:
+                throw std::runtime_error("Unkown location directive");
+        } 
+    }
+   
+    if(tokens[0].first != TOKEN_RBRACE)
+        throw std::runtime_error("Missing } at the end of location");
+
+    tokens.erase(tokens.begin());
+    server->addLocation(location);
     return ; 
 }
 
-int main(int argc , char **argv)
+
+
+void parse_server(std::vector<HttpServer> &servers, std::vector<t_token> &tokens)
 {
-    if(argc > 2)
-    {
-        return 0;
-    }
 
-    std::ifstream config(argv[1]);
-
-    if(!config.is_open())
-    {
-        return 1;
-    }
-
-    std::vector< t_token > tokens = tokenizer(config);
-    
     PARSER_STATE state = NONE;
-    HttpServer* servers[0xA];
-
-    int server_cout = 0;
-    std::memset(servers , 0 , sizeof(servers) );
 
     while(!tokens.empty())
     {
         TokenType type      = tokens[0].first;
         std::string value   = tokens[0].second;
 
-        // std::cout << token_type_to_string(type) << " " << value << std::endl;
+        if(type == TOKEN_RBRACE)
+            break;
 
         if(type == TOKEN_RETURN)
         {
             tokens.erase(tokens.begin());
             continue;
         }
-        
-        if(type == TOKEN_COMMENT)
-        {
-            while(tokens[0].first != TOKEN_RETURN)
-            {
-                if(tokens[0].first == TOKEN_EOF)
-                    break;
-                tokens.erase(tokens.begin());
-            }
-
-            continue;
-        }
-
+         
         if(state == NONE)
         {
             if(type != TOKEN_WORDS)
                 throw std::runtime_error("Special token should be inside a server");
 
-            server_cout++;
-
-            servers[server_cout - 1] = new HttpServer(-1 , value);
+            servers.push_back(HttpServer(-1 , value));
             state = BLOCK_SERVER_ENTER;
 
             tokens.erase(tokens.begin());
@@ -434,30 +583,67 @@ int main(int argc , char **argv)
 
         if(state == BLOCK_SERVER)
         {
-            if(type == TOKEN_EOF)
-                throw std::runtime_error("Missing } on the server");
-
-            if(type == TOKEN_WORDS)
-                throw std::runtime_error("Unkown configuration : " + value);
-
-            if(type == TOKEN_LISTEN)
-                parse_listen(servers[server_cout - 1], tokens);
-
-            if(type == TOKEN_CLIENT_MAX_BODY_SIZE)
-                parse_client_max_body_size(servers[server_cout - 1] , tokens);
-
-            if(type == TOKEN_ERROR_PAGE)
-                parse_error_page(servers[server_cout - 1] , tokens);
-
-            if(type == TOKEN_LOCATION)
-                parse_location(servers[server_cout - 1] , tokens); 
+            switch (type) 
+            {
+                case TOKEN_EOF :
+                    throw std::runtime_error("Missing } on the server"); break;
+                case TOKEN_LISTEN :
+                    parse_listen(&servers.back(), tokens);break;
+                case TOKEN_CLIENT_MAX_BODY_SIZE :
+                    parse_client_max_body_size(&servers.back() , tokens); break;
+                case TOKEN_ERROR_PAGE :
+                    parse_error_page(&servers.back() , tokens); break;
+                case TOKEN_LOCATION :
+                    parse_location(&servers.back() , tokens); break;
+                case TOKEN_COMMENT :
+                    parse_comment(tokens) ; break;
+                default :
+                    throw std::runtime_error("Unkown configuration : " + value);
                 
             if(type == TOKEN_RBRACE)
                 state = NONE;
+            } 
         }
-        tokens.erase(tokens.begin());
+    }
+    
+    if(tokens[0].first != TOKEN_RBRACE)
+        throw std::runtime_error("Missing ; at the end of server");
+
+    tokens.erase(tokens.begin());
+}
+
+std::vector<HttpServer> parser(std::string path)
+{
+    std::ifstream config(path.c_str());
+
+    if(!config.is_open())
+    {
+        throw std::runtime_error("Can't open config file");
+    }
+    
+    std::vector< t_token > tokens = tokenizer(config);
+
+    std::vector<HttpServer> servers;
+   
+    while (tokens[0].first != TOKEN_EOF) {
+        parse_comment(tokens);
+        parse_server(servers, tokens);
+
+        while (tokens[0].first == TOKEN_RETURN) {
+            tokens.erase(tokens.begin());
+        }
+    } 
+
+    return servers;
+}
+
+int main(int argc , char **argv)
+{
+    if(argc > 2)
+    {
+        return 0;
     }
 
-
+    std::vector<HttpServer> servers = parser(std::string(argv[1]));
     return 0;
 }

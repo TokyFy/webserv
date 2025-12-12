@@ -18,11 +18,6 @@
 #include <vector>
 #include "HttpAgent.hpp"
 
-enum HttpMethod {
-    METHOD_GET      = 1 << 0,
-    METHOD_POST     = 1 << 1,
-    METHOD_DELETE   = 1 << 2,
-};
 
 class Location
 {
@@ -49,6 +44,14 @@ class Location
         void                setAutoIndex(bool value);
         const std::string&  getRoot() const;
         void                setRoot(const std::string& value);
+
+        const std::string&  getCgiPath() const;
+        void                setCgiPath(const std::string& value);
+        const std::string&  getCgiExt() const;
+        void                setCgiExt(const std::string& value);
+
+        void                addAllowedMethod(const std::string&);
+        bool                isAllowedMethod(const std::string&);
 };
 
 class HttpServer : public HttpAgent
@@ -59,7 +62,7 @@ class HttpServer : public HttpAgent
         ssize_t     client_max_body_size;
         int         port;
         std::string interface;
-        std::vector<Location> location;
+        std::vector<Location> locations;
         std::map<int , std::string> error_pages;
         
 
@@ -76,8 +79,7 @@ class HttpServer : public HttpAgent
         void                setInterface(const std::string& value);
         void                setErrorPage(int code , std::string path);
         const std::string&  getErrorPage(int code);
-
-        void addLocation(Location& location);
-        void getLocation(std::string& path);
+        void                addLocation(Location& location);
+        void                getLocation(std::string& path);
 };
 

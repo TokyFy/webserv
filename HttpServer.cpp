@@ -12,7 +12,6 @@
 
 #include "HttpServer.hpp"
 #include "HttpAgent.hpp"
-#include <iostream>
 #include <stdexcept>
 #include <string>
 #include <strings.h>
@@ -22,12 +21,6 @@ HttpServer::HttpServer(int socket_fd)
     : HttpAgent(socket_fd, SERVER) , name("~ SERVER ~") , client_max_body_size(1024) , port(-1) ,
         interface("0.0.0.0")
 {
-    int i = 0;
-
-    while (i < 0x0F) {
-        locations[i++] = NULL;
-    }
-
     return;
 }
 
@@ -35,12 +28,6 @@ HttpServer::HttpServer(int socket_fd , std::string name)
     : HttpAgent(socket_fd, SERVER) , name(name) , client_max_body_size(1024) , port(-1) ,
         interface("0.0.0.0")
 {
-    int i = 0;
-
-    while (i < 0x0F) {
-        locations[i++] = NULL;
-    }
-
     return;
 }
 
@@ -100,10 +87,16 @@ const std::string& HttpServer::getErrorPage(int code) {
 }
 
 
+void HttpServer::addLocation(Location& location)
+{
+    locations.push_back(location);
+}
+
+
 // Location Object
 
 Location::Location()
-    : source("/") , index("index.html") , autoindex(true) , root("/") , allow_methods(0b111)
+    : source("/") , index("index.html") , autoindex(true) , root("/") , allow_methods(0b000)
 {
     return;
 }
@@ -144,4 +137,44 @@ const std::string& Location::getRoot() const {
 
 void Location::setRoot(const std::string& value) {
     root = value;
+}
+
+const std::string& Location::getCgiPath() const {
+    return cgi_path;
+}
+
+void Location::setCgiPath(const std::string& value) {
+    cgi_path = value;
+}
+
+const std::string& Location::getCgiExt() const {
+    return cgi_ext;
+}
+
+void Location::setCgiExt(const std::string& value) {
+    cgi_ext = value;
+}
+
+void Location::addAllowedMethod(const std::string & method)
+{
+    if(method == "GET")
+        allow_methods |= (1 << 0);
+    else if(method == "POST")
+        allow_methods |= (1 << 1);
+    else if(method == "DELETE")
+        allow_methods |= (1 << 2);
+    else 
+        throw std::runtime_error("Unkown method");
+}
+
+bool Location::isAllowedMethod(const std::string& method)
+{
+    if(method == "GET")
+        return ( allow_methods >> 0 ) & 1;
+    else if(method == "POST")
+        return ( allow_methods >> 1 ) & 1;
+    else if(method == "DELETE")
+        return ( allow_methods >> 2 ) & 1;
+    else 
+        return false;
 }

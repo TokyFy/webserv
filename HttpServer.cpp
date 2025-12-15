@@ -67,6 +67,16 @@ void    HttpServer::setInterface(const std::string& value)
     interface = value;
 }
 
+const std::string&  HttpServer::getName() const
+{
+    return name;
+}
+
+void    HttpServer::setName(const std::string& value)
+{
+    name = value;
+}
+
 void HttpServer::setErrorPage(int code , std::string path)
 {
     if(code <= 0 || code >= 0x255)
@@ -164,7 +174,7 @@ void Location::addAllowedMethod(const std::string & method)
     else if(method == "DELETE")
         allow_methods |= (1 << 2);
     else 
-        throw std::runtime_error("Unkown method");
+        throw std::runtime_error("Unkown method " + method);
 }
 
 bool Location::isAllowedMethod(const std::string& method)

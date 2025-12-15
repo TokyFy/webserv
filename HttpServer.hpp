@@ -38,6 +38,7 @@ class Location
 
         const std::string&  getSource() const;
         void                setSource(const std::string& value);
+
         const std::string&  getIndex() const;
         void                setIndex(const std::string& value);
         bool                getAutoIndex() const;
@@ -77,6 +78,11 @@ class HttpServer : public HttpAgent
         void                setPort(int value);
         const std::string&  getInterface() const;
         void                setInterface(const std::string& value);
+
+                const std::string&  getName() const;
+        void                setName(const std::string& value);
+
+
         void                setErrorPage(int code , std::string path);
         const std::string&  getErrorPage(int code);
         void                addLocation(Location& location);

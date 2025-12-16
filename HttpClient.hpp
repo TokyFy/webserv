@@ -10,9 +10,13 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+# pragma once
+
 #include "HttpAgent.hpp"
 #include <ctime>
 #include <string>
+#include "utils.hpp"
+
 
 enum STATE  { READ , WRITE , SEND_HEADER , PARSING , SEND_DATA , SEND_EOF , ERROR , CLOSED};
 
@@ -24,6 +28,7 @@ class HttpClient : public HttpAgent
         std::string rawHeaders;
         int         file_fd;
         std::time_t time;
+        bool        full_header;
 
         HttpClient();
 
@@ -38,4 +43,6 @@ class HttpClient : public HttpAgent
         void                setTime(std::time_t t);
         std::time_t         getTimeOut() const;
         const std::string&  getRawHeaders() const;
+        bool                isHeaderFull() const;
+        int                 openFile(std::string path , int &code , FILE_TYPE& type) const;
 };

@@ -38,7 +38,7 @@ class HttpResponse
         std::string response;
         std::string mimeType;
         bool        full;
-        bool        header;
+        bool            header;
         std::ifstream   file;
         ssize_t      lastRead;
 

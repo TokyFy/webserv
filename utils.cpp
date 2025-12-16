@@ -151,6 +151,31 @@ std::string normalize_path(std::string path)
     return path;
 }
 
+int error_page_builder(int code)
+{
+    std::stringstream html;
+
+    html << "<html><head>";
+    html << "<title>Index of</title>";
+    html << "<style> body { font-family: monospace; line-height: 0.5em; } </style>";
+    html << "</head><body>";
+    html << "<br/><p>ERROR : " << code << "</p><br/><hr>";
+
+    int pipefd[2];
+
+    if(pipe(pipefd) == -1)
+    {
+        return -1;
+    }
+
+    std::string output = html.str();
+
+    write(pipefd[1], output.c_str(), output.size());
+    close(pipefd[1]);
+
+    return pipefd[0];
+}
+
 int indexof(const char * path)
 {
     DIR *folder = opendir(path);

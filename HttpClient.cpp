@@ -17,9 +17,11 @@
 #include <ctime>
 #include <stdexcept>
 #include <unistd.h>
+#include <fcntl.h>
+
 
 HttpClient::HttpClient(int socket_fd , int server_id)
-    : HttpAgent(socket_fd, CLIENT) , state(READ) , server_id(server_id) , file_fd(-1) , time(0)
+    : HttpAgent(socket_fd, CLIENT) , state(READ) , server_id(server_id) , file_fd(-1) , time(0) , full_header(false)
 {
     return;
 }
@@ -60,7 +62,12 @@ void    HttpClient::appendRawHeader(const char* buff, size_t len)
     if(rawHeaders.size() == 0)
         rawHeaders = buff;
     else
-    rawHeaders.append(buff , len);
+        rawHeaders.append(buff , len);
+
+    if(rawHeaders.find("\r\n\r\n") != std::string::npos)
+    {
+        full_header = true;
+    }
 }
 
 
@@ -77,4 +84,40 @@ void HttpClient::setTime(std::time_t t)
 std::time_t HttpClient::getTimeOut() const 
 {
     return std::time(NULL) - time;
+}
+
+bool HttpClient::isHeaderFull() const
+{
+    return full_header;
+}
+
+int HttpClient::openFile(std::string path , int &code , FILE_TYPE& type) const
+{ 
+    path.insert(0 , ".");
+    FILE_TYPE t = mime(path);
+
+    if(t == ERR_DENIED)
+    {
+        code = 403;
+        type = HTML;
+        return error_page_builder(code);
+    }
+
+    if(t == ERR_NOTFOUND)
+    {
+        type = HTML;
+        code = 403;
+        return error_page_builder(code);
+    }
+
+    if (t == FOLDER)
+    {
+        code = 200;
+        type = HTML;
+        return indexof(path.c_str());
+    }
+   
+    code = 200;
+    type = t;
+    return open(path.c_str() , O_RDONLY);
 }

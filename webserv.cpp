@@ -100,15 +100,16 @@ int main() {
                     std::memset(buffer , 0 , CHUNK_SIZE);
                     ssize_t readed = recv(client_fd, buffer, sizeof(buffer), MSG_NOSIGNAL | MSG_DONTWAIT); 
 
-                    if(readed > 0)
+                    if(!client->isHeaderFull())
                     {
                         client->appendRawHeader(buffer, readed);
-                        client->setState(WRITE);
                         continue;
                     }
 
                     if(client->getTimeOut() >= 10)
                         client->setState(SEND_EOF);
+
+                    client->setState(WRITE);
                 }
                 else if (t == WRITE)
                 {
@@ -118,24 +119,8 @@ int main() {
 
                     if(client->getFileFd() == -1)
                     {
-                        std::string path = "." + getRequestPath(client->getRawHeaders());
-                        t = mime(path);
-
-                        if(t == ERR_DENIED || t == ERR_NOTFOUND)
-                        {
-                            file_fd = open("./www/400.html" , O_RDONLY);
-                            code = 400;
-                        }
-                        else if (t == FOLDER)
-                        {
-                            file_fd = indexof(path.c_str());
-                            code = 200;
-                        }
-                        else {
-                            file_fd = open(path.c_str() , O_RDONLY);
-                            code = 200;
-                        }
-                        
+                        std::string path = getRequestPath(client->getRawHeaders());
+                        file_fd = client->openFile(path , code , t);
                         client->setFileFd(file_fd);
                         
                         std::cerr << " " << code << " | " << "GET " << path << std::endl; 

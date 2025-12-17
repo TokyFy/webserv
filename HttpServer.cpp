@@ -16,6 +16,12 @@
 #include <string>
 #include <strings.h>
 #include <unistd.h>
+#include <cstring>
+#include <sys/epoll.h>
+#include <sys/socket.h>
+#include <cerrno>
+#include <netinet/in.h>
+
 
 HttpServer::HttpServer(int socket_fd)
     : HttpAgent(socket_fd, SERVER) , name("~ SERVER ~") , client_max_body_size(1024) , port(-1) ,
@@ -100,6 +106,71 @@ const std::string& HttpServer::getErrorPage(int code) {
 void HttpServer::addLocation(Location& location)
 {
     locations.push_back(location);
+}
+
+void HttpServer::setToEppoll(int epoll_fd)
+{
+    int server_fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (server_fd == -1)
+        throw std::runtime_error(std::string("socket failed: ") + strerror(errno));
+
+    int opt = 1;
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1)
+    {
+        close(server_fd);
+        throw std::runtime_error(std::string("setsockopt failed: ") + strerror(errno));
+    }
+
+    sockaddr_in addr;
+    std::memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(port);
+    addr.sin_addr.s_addr = INADDR_ANY;
+
+    if (bind(server_fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) == -1)
+    {
+        close(server_fd);
+        throw std::runtime_error(std::string("bind failed: ") + strerror(errno));
+    }
+
+    if (listen(server_fd, 10) == -1)
+    {
+        close(server_fd);
+        throw std::runtime_error(std::string("listen failed: ") + strerror(errno));
+    }
+
+    struct epoll_event server_event;
+    std::memset(&server_event, 0, sizeof(server_event));
+    server_event.events = EPOLLIN;
+    server_event.data.fd = server_fd;
+
+    if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, server_fd, &server_event) == -1)
+    {
+        close(server_fd);
+        throw std::runtime_error(std::string("epoll_ctl failed: ") + strerror(errno));
+    }
+    socket_fd = server_fd;
+}
+
+bool starts_with(const std::string& str, const std::string& prefix)
+{
+    if (str.size() < prefix.size())
+        return false;
+    return str.compare(0, prefix.size(), prefix) == 0;
+}
+
+Location& HttpServer::getLocation(std::string& path)
+{
+    std::vector<Location>::iterator it = locations.begin();
+
+    while(it != locations.end())
+    {
+        if(starts_with(path , it->getSource()))
+            return *it;
+        it++;
+    }
+
+    return locations[0];
 }
 
 
@@ -188,3 +259,6 @@ bool Location::isAllowedMethod(const std::string& method)
     else 
         return false;
 }
+
+
+

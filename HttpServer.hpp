@@ -86,6 +86,8 @@ class HttpServer : public HttpAgent
         void                setErrorPage(int code , std::string path);
         const std::string&  getErrorPage(int code);
         void                addLocation(Location& location);
-        void                getLocation(std::string& path);
+        Location&           getLocation(std::string& path);
+
+        void                setToEppoll(int epool_fd);
 };
 

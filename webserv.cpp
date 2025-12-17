@@ -32,7 +32,6 @@
 
 #define CHUNK_SIZE 8 * 1024
 
-
 int main() {
 	int server_fd = socket(AF_INET, SOCK_STREAM, 0);
 

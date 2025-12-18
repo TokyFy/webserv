@@ -28,41 +28,32 @@
 #include <fcntl.h>
 #include <cstdio>
 #include <iostream>
+#include <vector>
 #include "utils.hpp"
+#include "config.hpp"
 
 #define CHUNK_SIZE 8 * 1024
 
-int main() {
-	int server_fd = socket(AF_INET, SOCK_STREAM, 0);
+int main(int argc , char **argv) {
 
-	int opt = 1;
-	setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-
-	sockaddr_in addr;
-	addr.sin_family = AF_INET;
-	addr.sin_port = htons(8080);
-	addr.sin_addr.s_addr = INADDR_ANY;
-
-	if (bind(server_fd, reinterpret_cast<sockaddr *>(&addr), sizeof(addr)) == -1)
-    {
-		return 1;
-    }
-
-	listen(server_fd, 5);
-
-	int epoll = epoll_create(1);
-	struct epoll_event server_event;
-	server_event.events = EPOLLIN;
-	server_event.data.fd = server_fd;
-
-	epoll_ctl(epoll, EPOLL_CTL_ADD, server_fd , &server_event);
-
-	struct epoll_event all_events[0xFF];
+    if(argc != 2)
+        return EXIT_FAILURE;
+    
+    std::vector<HttpServer> servers = parser(argv[1]);
+	    
+    std::vector<HttpServer>::iterator it = servers.begin();
 
 
     Pool            httpAgentPool;
-    httpAgentPool.add(server_fd, new HttpServer(server_fd));
+    int epoll = epoll_create(1);
+    
+    while (it != servers.end()) {
+        it->setToEppoll(epoll);
+        httpAgentPool.add(it->getSockeFd(), &(*it));
+        it++;
+    }
 
+    struct epoll_event all_events[0xFF];
 
 	while (true) {
 		int queue = epoll_wait(epoll, all_events, 0xFF, 0);
@@ -82,6 +73,7 @@ int main() {
                 epoll_ctl(epoll , EPOLL_CTL_ADD , client_fd , &client_event);
 
                 HttpClient *new_client = new HttpClient(client_fd , event.data.fd);
+                new_client->setServer(dynamic_cast<HttpServer*>(agent));
                 new_client->setTime(std::time(NULL));
 
                 httpAgentPool.add(client_fd, new_client);
@@ -119,6 +111,7 @@ int main() {
                     if(client->getFileFd() == -1)
                     {
                         std::string path = getRequestPath(client->getRawHeaders());
+
                         file_fd = client->openFile(path , code , t);
                         client->setFileFd(file_fd);
                         
@@ -187,6 +180,5 @@ int main() {
 
 	}
 
-	close(server_fd);
 	return 0;
 }

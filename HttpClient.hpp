@@ -15,6 +15,7 @@
 #include "HttpAgent.hpp"
 #include <ctime>
 #include <string>
+#include "HttpServer.hpp"
 #include "utils.hpp"
 
 
@@ -25,6 +26,7 @@ class HttpClient : public HttpAgent
     private :
         STATE       state;
         int         server_id;
+        HttpServer  *server;
         std::string rawHeaders;
         int         file_fd;
         std::time_t time;
@@ -44,5 +46,7 @@ class HttpClient : public HttpAgent
         std::time_t         getTimeOut() const;
         const std::string&  getRawHeaders() const;
         bool                isHeaderFull() const;
+        int                 getServerId() const;
+        void                setServer(HttpServer* );
         int                 openFile(std::string path , int &code , FILE_TYPE& type) const;
 };

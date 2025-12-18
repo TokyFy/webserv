@@ -662,7 +662,7 @@ std::vector<HttpServer> parser(std::string path)
 
     return servers;
 }
-
+/*
 int main(int argc , char **argv)
 {
     if(argc > 2)
@@ -681,3 +681,4 @@ int main(int argc , char **argv)
     }
     return 0;
 }
+*/

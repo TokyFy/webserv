@@ -10,3 +10,8 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#pragma once
+
+#include "HttpServer.hpp"
+
+std::vector<HttpServer> parser(std::string path);

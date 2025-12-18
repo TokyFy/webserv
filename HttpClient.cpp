@@ -12,6 +12,7 @@
 
 #include "HttpClient.hpp"
 #include "HttpAgent.hpp"
+#include "HttpServer.hpp"
 #include <cstddef>
 #include <cstring>
 #include <ctime>
@@ -90,11 +91,22 @@ bool HttpClient::isHeaderFull() const
 {
     return full_header;
 }
+int HttpClient::getServerId() const
+{
+    return server_id;
+}
+
+void HttpClient::setServer(HttpServer *ptr) 
+{
+    server = ptr;
+}
 
 int HttpClient::openFile(std::string path , int &code , FILE_TYPE& type) const
 { 
-    path.insert(0 , ".");
-    FILE_TYPE t = mime(path);
+    Location location = server->getLocation(path);
+    std::string npath = location.getRoot() + path;
+
+    FILE_TYPE t = mime(npath);
 
     if(t == ERR_DENIED)
     {
@@ -114,10 +126,10 @@ int HttpClient::openFile(std::string path , int &code , FILE_TYPE& type) const
     {
         code = 200;
         type = HTML;
-        return indexof(path.c_str());
+        return indexof(npath.c_str());
     }
    
     code = 200;
     type = t;
-    return open(path.c_str() , O_RDONLY);
+    return open(npath.c_str() , O_RDONLY);
 }

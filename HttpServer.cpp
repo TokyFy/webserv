@@ -236,6 +236,17 @@ void Location::setCgiExt(const std::string& value) {
     cgi_ext = value;
 }
 
+
+const std::string&  Location::getUploadPath() const
+{
+    return upload;
+}
+
+void                Location::setUploadPath(const std::string& path)
+{
+    upload = path;
+}
+
 void Location::addAllowedMethod(const std::string & method)
 {
     if(method == "GET")

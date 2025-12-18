@@ -66,6 +66,8 @@ enum TokenType {
     TOKEN_ALLOW_METHODS,        // allow_methods
     TOKEN_AUTOINDEX,            // autoindex
     TOKEN_CGI,                  // cgi
+    TOKEN_UPLOAD,               // upload
+
 
                                 // Values
     TOKEN_WORDS,
@@ -100,6 +102,7 @@ const char* token_type_to_string(TokenType type)
         case TOKEN_ALLOW_METHODS:         return "TOKEN_ALLOW_METHODS";
         case TOKEN_CLIENT_MAX_BODY_SIZE:  return "TOKEN_CLIENT_MAX_BODY_SIZE";
         case TOKEN_WORDS:                 return "TOKEN_WORDS";
+        case TOKEN_UPLOAD:                 return "TOKEN_WORDS";
         case TOKEN_EOF:                 return "TOKEN_EOF";
     }
     return "UNKNOWN_TOKEN";
@@ -122,6 +125,7 @@ TokenType get_token_type(std::string &token)
         case 0x638F8083u    : return TOKEN_AUTOINDEX;
         case 0x0C3E3CBCu    : return TOKEN_ALLOW_METHODS;
         case 0x74F60DEFu    : return TOKEN_CLIENT_MAX_BODY_SIZE;
+        case 0xCE040E01u    : return TOKEN_UPLOAD;
         
         default             : return TOKEN_WORDS;
     }
@@ -482,6 +486,25 @@ void parse_comment(std::vector<t_token> &tokens)
     tokens.erase(tokens.begin());
 }
 
+void parse_location_upload(Location *location , std::vector<t_token> &tokens)
+{
+    tokens.erase(tokens.begin());
+    
+    if(tokens[0].first != TOKEN_WORDS)
+        throw std::runtime_error(location->getSource() + " : Missing upload path");
+
+    location->setUploadPath(tokens[0].second);
+    
+    tokens.erase(tokens.begin());
+
+    if(tokens[0].first != TOKEN_SEMICOLON)
+        throw std::runtime_error(location->getSource() + " : Missing semiconlon on upload");
+
+    tokens.erase(tokens.begin());
+
+    std::cout << location->getSource() << " | upload : " << location->getUploadPath() << std::endl;
+}
+
 void parse_location(HttpServer *server , std::vector<t_token> &tokens)
 {
     Location location;
@@ -524,7 +547,9 @@ void parse_location(HttpServer *server , std::vector<t_token> &tokens)
             case TOKEN_AUTOINDEX :
                 parse_location_autoindex(&location , tokens); break;
             case TOKEN_COMMENT :
-                parse_comment(tokens); break; 
+                parse_comment(tokens); break;
+            case TOKEN_UPLOAD :
+                parse_location_upload(&location , tokens) ; break; 
             default:
                 throw std::runtime_error("Unkown location directive " + value);
         } 

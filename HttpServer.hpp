@@ -31,6 +31,7 @@ class Location
         int         allow_methods;
         std::string cgi_path;
         std::string cgi_ext;
+        std::string upload;
 
     public:
         Location();
@@ -50,6 +51,9 @@ class Location
         void                setCgiPath(const std::string& value);
         const std::string&  getCgiExt() const;
         void                setCgiExt(const std::string& value);
+
+        const std::string&  getUploadPath() const;
+        void                setUploadPath(const std::string& path);
 
         void                addAllowedMethod(const std::string&);
         bool                isAllowedMethod(const std::string&);

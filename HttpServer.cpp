@@ -21,6 +21,7 @@
 #include <sys/socket.h>
 #include <cerrno>
 #include <netinet/in.h>
+#include <iostream>
 
 
 HttpServer::HttpServer(int socket_fd)
@@ -173,11 +174,27 @@ Location& HttpServer::getLocation(std::string& path)
     return locations[0];
 }
 
+void HttpServer::normalize()
+{
+    if(port == -1)
+        throw std::runtime_error("Server should have an Interface:port");
+    
+    if(locations.empty())
+        throw std::runtime_error("Server should have at least 1 location");
+
+    std::vector<Location>::iterator it = locations.begin();
+
+    while(it != locations.end())
+    {
+        it->normalize();
+        it++;
+    }
+}
 
 // Location Object
 
 Location::Location()
-    : source("/") , index("index.html") , autoindex(true) , root("/") , allow_methods(0b000)
+    : source("/") , autoindex(true) , root("/") , allow_methods(0b000)
 {
     return;
 }
@@ -271,5 +288,19 @@ bool Location::isAllowedMethod(const std::string& method)
         return false;
 }
 
+void    Location::normalize()
+{
+    if(root.empty())
+        throw std::runtime_error("Location should have a route");
+
+    if(index.empty() && !autoindex)
+        throw std::runtime_error("Index needed when autoindex is false");
+   
+    if(allow_methods == 0)
+        throw std::runtime_error("Location should have at least on method allowed");
+
+    if(upload.empty() && !this->isAllowedMethod("POST"))
+        throw  std::runtime_error("Location should have upload path when POST allowed");
+}
 
 

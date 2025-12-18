@@ -57,6 +57,7 @@ class Location
 
         void                addAllowedMethod(const std::string&);
         bool                isAllowedMethod(const std::string&);
+        void                normalize();
 };
 
 class HttpServer : public HttpAgent
@@ -86,12 +87,12 @@ class HttpServer : public HttpAgent
                 const std::string&  getName() const;
         void                setName(const std::string& value);
 
-
         void                setErrorPage(int code , std::string path);
         const std::string&  getErrorPage(int code);
         void                addLocation(Location& location);
         Location&           getLocation(std::string& path);
 
         void                setToEppoll(int epool_fd);
+        void                normalize();
 };
 

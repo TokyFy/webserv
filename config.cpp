@@ -671,5 +671,13 @@ int main(int argc , char **argv)
     }
 
     std::vector<HttpServer> servers = parser(std::string(argv[1]));
+
+    std::vector<HttpServer>::iterator it = servers.begin();
+
+    while(it != servers.end())
+    {
+        it->normalize();
+        it++;
+    }
     return 0;
 }

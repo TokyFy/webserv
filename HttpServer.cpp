@@ -40,7 +40,8 @@ HttpServer::HttpServer(int socket_fd , std::string name)
 
 HttpServer::~HttpServer()
 {
-    close(socket_fd);
+    if(socket_fd > 0)
+        close(socket_fd);
     return;
 }
 
@@ -171,7 +172,7 @@ Location& HttpServer::getLocation(std::string& path)
         it++;
     }
 
-    return locations[0];
+    return locations[locations.size() - 1];
 }
 
 void HttpServer::normalize()
@@ -222,6 +223,9 @@ void Location::setIndex(const std::string& value) {
 }
 
 bool Location::getAutoIndex() const {
+    if(index.size() == 0)
+        return false;
+
     return autoindex;
 }
 

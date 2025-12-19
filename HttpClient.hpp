@@ -49,4 +49,5 @@ class HttpClient : public HttpAgent
         int                 getServerId() const;
         void                setServer(HttpServer* );
         int                 openFile(std::string path , int &code , FILE_TYPE& type) const;
+        int                 openFile(std::string root , std::string path , int &code , FILE_TYPE& type) const;
 };

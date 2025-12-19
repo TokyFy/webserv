@@ -18,6 +18,7 @@
 #include <string>
 #include <unistd.h>
 #include "utils.hpp"
+#include "HttpServer.hpp"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <stdio.h>
@@ -176,9 +177,18 @@ int error_page_builder(int code)
     return pipefd[0];
 }
 
-int indexof(const char * path)
+int indexof(Location& location , std::string path)
 {
-    DIR *folder = opendir(path);
+    if(path == "/")
+        path = location.getSource();
+    
+    std::string root = replaceFirstOccurrence(location.getRoot(), "/", "./");
+    std::string npath = replaceFirstOccurrence(path, location.getSource() , root);
+
+    
+    DIR *folder = opendir(npath.c_str());
+
+    std::cerr << "INDEX OF " << npath << std::endl;
 
     if(!folder)
         return -1;
@@ -188,7 +198,7 @@ int indexof(const char * path)
     if(pipe(pipefd) == -1)
     {
         closedir(folder);
-        return -1;
+        return error_page_builder(500);
     }
 
     struct dirent *entry;
@@ -199,15 +209,14 @@ int indexof(const char * path)
     html << "<title>Index of</title>";
     html << "<style> body { font-family: monospace; line-height: 0.5em; } </style>";
     html << "</head><body>";
-    html << "<br/><p>INDEX OF : " << normalize_path(path) << "</p><br/><hr>";
-
+    html << "<br/><p>INDEX OF : " << path << "</p><br/><hr>";
 
     while((entry = readdir(folder)) != NULL)
     {
         if(std::strcmp(entry->d_name , "..") == 0 || std::strcmp(entry->d_name , ".") == 0)
             continue;
 
-        html << "<p> * " << "<a href=\"" << normalize_path(path) << "/" << entry->d_name << "\">" << entry->d_name << "</a></p>";  
+        html << "<p> * " << "<a href=\"" << (path == "/" ? "" : path) << "/" << entry->d_name << "\">" << entry->d_name << "</a></p>";  
     }
 
     html << "</body></html>";

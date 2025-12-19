@@ -18,6 +18,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
+#include <exception>
 #include <netinet/in.h>
 #include <string>
 #include <sys/socket.h>
@@ -47,10 +48,17 @@ int main(int argc , char **argv) {
     Pool            httpAgentPool;
     int epoll = epoll_create(1);
     
-    while (it != servers.end()) {
-        it->setToEppoll(epoll);
-        httpAgentPool.add(it->getSockeFd(), &(*it));
-        it++;
+    try 
+    {
+        while (it != servers.end()) {
+            it->setToEppoll(epoll);
+            httpAgentPool.add(it->getSockeFd(), &(*it));
+            it++;
+        }
+    } catch (std::exception &e)
+    {
+        std::cout << "Error :" << e.what() << std::endl;
+        return 1;
     }
 
     struct epoll_event all_events[0xFF];
@@ -113,6 +121,8 @@ int main(int argc , char **argv) {
                         std::string path = getRequestPath(client->getRawHeaders());
 
                         file_fd = client->openFile(path , code , t);
+                        if(file_fd == -1)
+                            file_fd = error_page_builder(500);
                         client->setFileFd(file_fd);
                         
                         std::cerr << " " << code << " | " << "GET " << path << std::endl; 

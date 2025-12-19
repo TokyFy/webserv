@@ -13,10 +13,13 @@
 #include "HttpClient.hpp"
 #include "HttpAgent.hpp"
 #include "HttpServer.hpp"
+#include "utils.hpp"
 #include <cstddef>
 #include <cstring>
 #include <ctime>
+#include <iostream>
 #include <stdexcept>
+#include <string>
 #include <unistd.h>
 #include <fcntl.h>
 
@@ -101,10 +104,33 @@ void HttpClient::setServer(HttpServer *ptr)
     server = ptr;
 }
 
+std::string replaceFirstOccurrence(const std::string &originalString, const std::string &target, const std::string &replacement)
+{
+    if (target.empty())
+        return originalString;
+
+    std::string resultString = originalString;
+    std::string::size_type position = resultString.find(target);
+
+    if (position != std::string::npos)
+        resultString.replace(position, target.length(), replacement);
+
+    return resultString;
+}
+
 int HttpClient::openFile(std::string path , int &code , FILE_TYPE& type) const
 { 
+    // source -> /public
+    // root   -> /www
+    // path   -> /public/index.html -> /www/index.html
+    // path   -> /public/folder 
+
+
     Location location = server->getLocation(path);
-    std::string npath = location.getRoot() + path;
+    std::string root = replaceFirstOccurrence(location.getRoot(), "/", "./");
+    std::string npath = replaceFirstOccurrence(path, location.getSource() , root);
+
+    std::cerr << npath << std::endl;
 
     FILE_TYPE t = mime(npath);
 
@@ -124,9 +150,22 @@ int HttpClient::openFile(std::string path , int &code , FILE_TYPE& type) const
 
     if (t == FOLDER)
     {
+        code = 404;
+        type = HTML;
+
+        if(!location.getAutoIndex())
+            return error_page_builder(403);
+        else 
+        {
+            int index = this->openFile(path + location.getIndex() , code , type);
+        
+            if(index > 0 && code == 200)
+                return index;
+        }
+
         code = 200;
         type = HTML;
-        return indexof(npath.c_str());
+        return indexof(location , path);
     }
    
     code = 200;

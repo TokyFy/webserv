@@ -44,6 +44,14 @@ std::string getRequestPath(const std::string &header)
     return header.substr(methodEnd + 1, pathEnd - methodEnd - 1);
 }
 
+std::string getRequestMethod(const std::string &header)
+{
+    std::string::size_type methodEnd = header.find(' ');
+    if (methodEnd == std::string::npos)
+        return "";
+    return header.substr(0, methodEnd);
+}
+
 
 FILE_TYPE mime(const std::string& str)
 {

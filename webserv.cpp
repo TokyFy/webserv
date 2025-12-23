@@ -118,14 +118,36 @@ int main(int argc , char **argv) {
 
                     if(client->getFileFd() == -1)
                     {
-                        std::string path = getRequestPath(client->getRawHeaders());
+                        std::string method = getRequestMethod(client->getRawHeaders());
+                        std::string path   = getRequestPath(client->getRawHeaders());
 
-                        file_fd = client->openFile(path , code , t);
-                        if(file_fd == -1)
-                            file_fd = error_page_builder(500);
+                        // Only simple GET handling for now
+                        if (method != "GET")
+                        {
+                            code = 405;
+                            t = HTML;
+                            file_fd = error_page_builder(code);
+                        }
+                        else
+                        {
+                            // Enforce location allowed methods
+                            Location loc = client->getServer()->getLocation(path);
+                            if (!loc.isAllowedMethod("GET"))
+                            {
+                                code = 405;
+                                t = HTML;
+                                file_fd = error_page_builder(code);
+                            }
+                            else
+                            {
+                                file_fd = client->openFile(path , code , t);
+                                if(file_fd == -1)
+                                    file_fd = error_page_builder(500);
+                            }
+                        }
                         client->setFileFd(file_fd);
                         
-                        std::cerr << " " << code << " | " << "GET " << path << std::endl; 
+                        std::cerr << " " << code << " | " << method << " " << path << std::endl; 
                     }
                     std::string header = header_builder(code , t); 
                     ssize_t sended = send(client_fd , header.c_str() , header.size() , MSG_NOSIGNAL);

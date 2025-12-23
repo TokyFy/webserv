@@ -142,7 +142,7 @@ int HttpClient::openFile(std::string path , int &code , FILE_TYPE& type) const
     if(t == ERR_NOTFOUND)
     {
         type = HTML;
-        code = 403;
+        code = 404;
         return error_page_builder(code);
     }
 

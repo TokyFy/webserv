@@ -48,6 +48,7 @@ class HttpClient : public HttpAgent
         bool                isHeaderFull() const;
         int                 getServerId() const;
         void                setServer(HttpServer* );
+        HttpServer*         getServer() const { return server; }
         int                 openFile(std::string path , int &code , FILE_TYPE& type) const;
         int                 openFile(std::string root , std::string path , int &code , FILE_TYPE& type) const;
 };

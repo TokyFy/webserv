@@ -94,5 +94,7 @@ class HttpServer : public HttpAgent
 
         void                setToEppoll(int epool_fd);
         void                normalize();
+        std::string         getRoutedPath(const std::string& requestedPath) const;
+
 };
 

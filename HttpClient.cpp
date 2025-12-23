@@ -125,12 +125,10 @@ int HttpClient::openFile(std::string path , int &code , FILE_TYPE& type) const
     // path   -> /public/index.html -> /www/index.html
     // path   -> /public/folder 
 
-
+    std::string npath = "." + server->getRoutedPath(path);
     Location location = server->getLocation(path);
-    std::string root = replaceFirstOccurrence(location.getRoot(), "/", "./");
-    std::string npath = replaceFirstOccurrence(path, location.getSource() , root);
 
-    std::cerr << npath << std::endl;
+    std::cerr << "OPENFILE : " << npath << std::endl;
 
     FILE_TYPE t = mime(npath);
 
@@ -154,9 +152,10 @@ int HttpClient::openFile(std::string path , int &code , FILE_TYPE& type) const
         type = HTML;
 
         if(!location.getAutoIndex())
-            return error_page_builder(403);
-        else 
         {
+            if(location.getIndex().size() == 0)
+                return -1;
+
             int index = this->openFile(path + location.getIndex() , code , type);
         
             if(index > 0 && code == 200)

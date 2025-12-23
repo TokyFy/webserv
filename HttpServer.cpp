@@ -192,6 +192,46 @@ void HttpServer::normalize()
     }
 }
 
+std::string HttpServer::getRoutedPath(const std::string& requestedPath) const
+{
+    if (locations.empty())
+        throw std::runtime_error("Server should have at least 1 location");
+
+    // Default to LAST location
+    std::vector<Location>::const_iterator matched = locations.end();
+    --matched;
+
+    // Longest prefix match
+    for (std::vector<Location>::const_iterator it = locations.begin();
+         it != locations.end(); ++it)
+    {
+        const std::string& src = it->getSource();
+
+        if (starts_with(requestedPath, src))
+        {
+            matched = it;
+            break;
+        }
+    }
+
+    const std::string& src = matched->getSource();
+    std::string suffix;
+
+    if (requestedPath.size() >= src.size())
+        suffix = requestedPath.substr(src.size());
+
+    std::string root = matched->getRoot();
+
+    // Avoid double '/'
+    if (!root.empty() && root[root.size() - 1] == '/' &&
+        !suffix.empty() && suffix[0] == '/')
+    {
+        root.erase(root.size() - 1);
+    }
+
+    return root + suffix;
+}
+
 // Location Object
 
 Location::Location()
@@ -223,9 +263,6 @@ void Location::setIndex(const std::string& value) {
 }
 
 bool Location::getAutoIndex() const {
-    if(index.size() == 0)
-        return false;
-
     return autoindex;
 }
 
